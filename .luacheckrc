@@ -17,7 +17,7 @@ files["Main.lua"] = { globals = { "ForeverGoldDB", "SLASH_FOREVERGOLD1", "SLASH_
 
 -- Read-only WoW API globals used by adapters and UI.
 read_globals = {
-  "C_AuctionHouse", "C_Timer", "C_NamePlate", "C_Item", "C_TradeSkillUI", "C_Map", "C_MerchantFrame",
+  "C_AuctionHouse", "C_Timer", "C_NamePlate", "C_Item", "C_TradeSkillUI", "C_Map", "C_MerchantFrame", "C_Container",
   "TooltipDataProcessor", "Enum", "GameTooltip", "CreateFrame", "UIParent", "hooksecurefunc",
   "GetItemInfo", "GetItemInfoInstant", "GetRealmName", "UnitFactionGroup", "GetSubZoneText", "GetZoneText",
   "UnitGUID", "UnitName", "UnitIsPlayer", "UnitIsDead", "UnitCanAttack", "GetTime", "time", "date",

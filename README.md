@@ -12,6 +12,7 @@ wherever you are: at the auctioneer, at vendors and out in the world.
 |---|---|
 | **Auction house** | A ForeverGold panel docked beside the AH with one **Scan** button and a list of deals, best first: flips, vendor snipes, disenchanting, essence conversions, crafts, "make it yourself" and other-AH arbitrage. Click a row and it's searched in the Blizzard Buy tab next to it. |
 | **Crafting** | Profit or loss of every recipe your characters know, at today's prices. |
+| **Selling** | A Sell tab listing everything in your bags you can auction, most valuable first. Click one: price, quantity and duration are set up for you (all editable), then one click on **Post**. |
 | **Conversions** | Every essence combine (3 lesser → 1 greater) and split (1 greater → 3 lesser), with live profit or loss. No profession needed. |
 | **Out in the world** | A coin and value over nameplates of mobs worth farming, plus "loot per kill" and best drops in the mob's tooltip. |
 | **Vendors** | Items a vendor sells for less than the AH pays glow green, with the profit shown underneath. |
@@ -71,6 +72,32 @@ The minimap coin's tooltip and the home screen explain all of this in game as we
 
 Tick **Only what I can do** to hide anything your current character can't do.
 
+## Selling
+
+Open the **Sell** tab on the ForeverGold panel at any auction house.
+
+1. Your sellable bag items are listed with a suggested price each and the advice: **Post**, **Vendor it**
+   (the AH pays less than a vendor after the cut) or **Set a price** (no data yet).
+2. Click an item. The suggestion fills in from your last scan, then a live search updates it with current
+   prices, including which listings are yours.
+3. Change the price (type `1g 20s`, `85s` or plain copper), the quantity or the duration (2 h / 8 h / 24 h)
+   if you like. The total, what you'll get after the cut, and the deposit update as you type.
+4. Press **Post** (or Enter). ForeverGold moves on to the next item.
+
+### How the price is chosen (and the traps it avoids)
+
+| Situation | What ForeverGold does |
+|---|---|
+| Your own auction is the cheapest | Matches it, never undercutting yourself |
+| A few listings far under the normal price (**bait**) | Ignores them. They're there to make you undercut and crash the price |
+| A big wall of cheap listings, and the item has price history (**price war**) | Won't follow it down. Sits just under the cheapest sensible listing, or at the floor |
+| Normal competition | Undercuts the cheapest listing by `undercut` (1c by default) |
+| Nobody else selling | Posts at the item's normal market value |
+| The AH pays less than a vendor after the cut | Recommends vendoring instead |
+
+"Far under" means below `sellFloor` (60%) of the normal price. "A few" means at most `baitShare` (20%)
+of the units listed. Gear is posted buyout-only, so nobody can win it with a low starting bid.
+
 ## Commands
 
 | Command | Does |
@@ -92,6 +119,10 @@ Tick **Only what I can do** to hide anything your current character can't do.
 | `mobMinValue` | 50s | Loot value per kill needed for a nameplate coin |
 | `mobMinKills` | 5 | Kills recorded before a mob's value is trusted |
 | `historyDays` | 30 | Days of price snapshots kept |
+| `undercut` | 1c | How much to undercut the cheapest competitor by |
+| `sellFloor` | 60% | Never follow prices below this share of the normal price |
+| `baitShare` | 20% | Cheap listings that are at most this share of supply count as bait |
+| `sellDuration` | 2 | Default auction length: 1 = 2 h, 2 = 8 h, 3 = 24 h (the tab remembers your last choice) |
 | `showNameplates`, `showTooltips`, `showMerchant`, `showMinimap` | on | Turn individual features on or off |
 
 ## Known limitations

@@ -190,6 +190,12 @@ for _, e in ipairs({ "TRADE_SKILL_SHOW", "TRADE_SKILL_UPDATE", "TRADE_SKILL_LIST
 end
 on("SKILL_LINES_CHANGED", function() app:refreshSkills() end)
 
+-- Selling: live search results and bag changes.
+for _, e in ipairs({ "COMMODITY_SEARCH_RESULTS_UPDATED", "ITEM_SEARCH_RESULTS_UPDATED" }) do
+  on(e, function(...) app.sellSearch:onEvent(e, ...) end)
+end
+on("BAG_UPDATE_DELAYED", debounce(0.3, function() panel:OnBagsChanged() end))
+
 -- Item details arrive asynchronously after a scan. Once they settle, re-run the
 -- finders (vendor and disenchant deals need them) and repaint the panel.
 on("GET_ITEM_INFO_RECEIVED", debounce(1, function()

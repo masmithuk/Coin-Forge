@@ -34,6 +34,9 @@ function App.new(saved, clock)
   app.loot = ns.LootDB.new(saved)
   app.scanner = ns.Scanner.new(app.prices, app.events, saved)
   app.session = ns.Session.new(clock, GetMoney and GetMoney() or 0)
+  app.sellSearch = ns.SellSearch.new(function(item, listings)
+    app.events:emit("sellSuggestion", item, app:suggest(item, listings), true)
+  end)
   app:refreshSkills()
 
   app.events:on("scanComplete", function(result) app:onScanComplete(result) end)
@@ -208,6 +211,49 @@ function App:craftRows()
     end,
   }
   return ns.Crafting.evaluateAll(self:recipes(), ctx)
+end
+
+-- Selling ---------------------------------------------------------------------
+
+--- Suggested price for an item from bags. `listings` are live search results;
+--- without them, the listings from this session's scan are used.
+function App:suggest(item, listings)
+  local key, neutral = self:market()
+  if not listings then
+    local result = self.scanner.lastResult
+    listings = {}
+    for i, l in ipairs(result and result.marketKey == key and result.listings[item.itemID] or {}) do
+      listings[i] = { price = l.price, count = l.count, mine = false }
+    end
+  end
+  local info = ns.ItemInfo.get(item.itemID)
+  return ns.SellPricing.suggest({
+    listings = listings,
+    value = self:value(item.itemID, key),
+    historyDays = self:history(item.itemID, key),
+    vendorSell = info and info.sellPrice or 0,
+    cutRate = ns.Fees.cutRate(neutral),
+    settings = self.settings,
+  })
+end
+
+local ACTION_ORDER = { post = 1, vendor = 2, manual = 3 }
+
+--- Everything in your bags that can go on the AH, with a suggested price,
+--- most valuable first.
+function App:sellRows()
+  local rows = {}
+  for _, item in ipairs(ns.Bags.sellable()) do
+    local s = self:suggest(item)
+    rows[#rows + 1] = { item = item, suggestion = s, total = (s.price or 0) * item.postable }
+  end
+  table.sort(rows, function(a, b)
+    local oa, ob = ACTION_ORDER[a.suggestion.action], ACTION_ORDER[b.suggestion.action]
+    if oa ~= ob then return oa < ob end
+    if a.total ~= b.total then return a.total > b.total end
+    return tostring(a.item.key) < tostring(b.item.key)
+  end)
+  return rows
 end
 
 -- Vendors ---------------------------------------------------------------------

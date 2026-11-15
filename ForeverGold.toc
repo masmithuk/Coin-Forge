@@ -2,7 +2,7 @@
 ## Title: ForeverGold
 ## Notes: Gold-making companion: AH scanning, profitable mobs, vendor flips, disenchant / craft / arbitrage opportunities.
 ## Author: masmithuk
-## Version: 0.2.0
+## Version: 0.3.0
 ## SavedVariables: ForeverGoldDB
 ## IconTexture: Interface\Icons\INV_Misc_Coin_01
 ## AddonCompartmentFunc: ForeverGold_OnCompartmentClick
@@ -26,6 +26,7 @@ src/Core/Crafting.lua
 src/Core/Appraisal.lua
 src/Core/LootDB.lua
 src/Core/Opportunities.lua
+src/Core/SellPricing.lua
 src/Core/VendorAnalysis.lua
 src/Core/Session.lua
 src/Core/Commands.lua
@@ -43,11 +44,15 @@ src/WoW/TradeSkillRecorder.lua
 src/WoW/LootRecorder.lua
 src/WoW/Nameplates.lua
 src/WoW/Merchant.lua
+src/WoW/Bags.lua
+src/WoW/SellSearch.lua
+src/WoW/Poster.lua
 src/WoW/Tooltip.lua
 src/WoW/App.lua
 
 # UI
 src/UI/Widgets.lua
+src/UI/SellView.lua
 src/UI/AuctionPanel.lua
 src/UI/MerchantOverlay.lua
 src/UI/HomeScreen.lua

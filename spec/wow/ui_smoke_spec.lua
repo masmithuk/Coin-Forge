@@ -178,6 +178,61 @@ describe("UI smoke test", function()
     for _, item in ipairs(dealList.items) do assert.is_true(item.canDo) end
   end)
 
+  it("sets up a sale from the Sell tab and posts it with one click", function()
+    local posted = {}
+    _G.ItemLocation = { CreateFromBagAndSlot = function(_, bag, slot) return { bag = bag, slot = slot } end }
+    _G.C_Container = {
+      GetContainerNumSlots = function(bag) return bag == 0 and 1 or 0 end,
+      GetContainerItemInfo = function() return { itemID = 4306, stackCount = 20, hyperlink = "item:4306" } end,
+    }
+    _G.C_Item = { DoesItemExist = function() return true end }
+    _G.Enum.ItemCommodityStatus = { Item = 1, Commodity = 2 }
+    local ah = _G.C_AuctionHouse
+    ah.IsSellItemValid = function() return true end
+    ah.GetItemCommodityStatus = function() return 2 end
+    ah.GetAvailablePostCount = function() return 20 end
+    ah.MakeItemKey = function(id) return { itemID = id } end
+    ah.SendSearchQuery = function() end
+    ah.GetNumCommoditySearchResults = function() return 2 end
+    ah.GetCommoditySearchResultInfo = function(_, i)
+      return ({ { unitPrice = 5, quantity = 1 }, { unitPrice = 100, quantity = 50 } })[i]
+    end
+    ah.CalculateCommodityDeposit = function() return 30 end
+    ah.PostCommodity = function(...) posted[#posted + 1] = { ... } return true end
+
+    -- two days of history at 100c
+    replicate = { { itemID = 4306, count = 20, buyout = 20 * 100 } }
+    for day = 1, 2 do
+      now = (100 + day) * 86400
+      ns.app.scanner.state.lastStart = nil
+      ns.app:startScan()
+      fire("REPLICATE_ITEM_LIST_UPDATE")
+    end
+
+    fire("AUCTION_HOUSE_SHOW")
+    local function find(pred)
+      for _, f in ipairs(env.__created) do if pred(f) then return f end end
+    end
+    find(function(f) return f.kind == "sell" and f.scripts.OnClick end):Fire("OnClick")
+    local row = find(function(f) return f.item and f.item.item and f.scripts.OnClick end)
+    assert.is_not_nil(row, "expected a bag item row")
+    row:Fire("OnClick", "LeftButton")
+
+    -- live results arrive: the single 5c unit is bait, so we undercut 100c
+    fire("COMMODITY_SEARCH_RESULTS_UPDATED", 4306)
+    local priceBox = find(function(f) return f.text == ns.Money.format(99) end)
+    assert.is_not_nil(priceBox, "expected the price box to hold 99c")
+
+    -- edit the price, then post
+    priceBox.text = "1s 5c"
+    priceBox:Fire("OnTextChanged", true)
+    find(function(f) return f.text == "Post" and f.scripts.OnClick end):Fire("OnClick")
+    assert.equal(1, #posted)
+    assert.same({ { bag = 0, slot = 1 }, ns.app.settings.sellDuration, 20, 105 }, posted[1])
+    fire("BAG_UPDATE_DELAYED")
+    _G.ItemLocation, _G.C_Container, _G.C_Item = nil, nil, nil
+  end)
+
   it("highlights profitable merchant items", function()
     replicate = { { itemID = 4306, count = 20, buyout = 20 * 100 } }
     for day = 1, 3 do

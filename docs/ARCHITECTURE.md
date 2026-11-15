@@ -45,6 +45,7 @@ tested without the game, and the parts that touch the game stay small.
 | `Appraisal` | Auction / vendor / disenchant value of an item and the best action |
 | `LootDB` | Kills, coin and drops per NPC; expected value per kill |
 | `Opportunities` | Deal finders over current listings (see below) |
+| `SellPricing` | Suggested posting price: own listings, bait, price wars, undercut, vendor check |
 | `VendorAnalysis` | Which merchant items are worth more on the AH |
 | `Session` | Gold per hour |
 | `Commands` | `/fg` parsing and routing |
@@ -64,6 +65,9 @@ tested without the game, and the parts that touch the game stay small.
 | `LootRecorder` | `LOOT_OPENED` snapshot → `LOOT_SLOT_CLEARED` records only what was taken |
 | `Nameplates` | Coin marker on `C_NamePlate` frames |
 | `Merchant` | Merchant stock; remembers vendor prices for crafting costs |
+| `Bags` | Sellable bag items (commodities grouped by item, gear by link) |
+| `SellSearch` | Live AH search for one item; marks your own listings |
+| `Poster` | `PostCommodity` / `PostItem` (buyout-only), deposit, throttle check |
 | `Tooltip` | `TooltipDataProcessor` post-calls (falls back to `OnTooltipSet*` hooks) |
 | `App` | Builds contexts for the finders and exposes one API to the UI |
 
@@ -73,6 +77,7 @@ tested without the game, and the parts that touch the game stay small.
 |---|---|
 | `Widgets` | Window, resize grip, wrapping tab bar, virtual list with responsive columns |
 | `AuctionPanel` | Docked beside the AH: Deals and Crafting views |
+| `SellView` | Sell tab: bag item list plus editable price, quantity and duration, and the Post button |
 | `MerchantOverlay` | Green glow and profit on vendor items, one summary strip |
 | `HomeScreen` | Status, checklist, best deals and mobs, session, feature guide |
 | `MinimapButton` | Coin on the minimap with an explanatory tooltip; draggable |

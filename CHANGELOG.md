@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0 (2026-11-15)
+
+- New Sell tab, like Auctionator's selling page: every sellable bag item with a suggested price. Click one and
+  price, quantity and duration are set up (all editable), then one click on Post. It moves on to the next item.
+- Trap-aware pricing: ignores bait listings, refuses to follow price wars below 60% of normal, never undercuts
+  your own auctions, and recommends vendoring when the AH pays less.
+- Live search when you pick an item, so prices are current and your own listings are recognised.
+- Gear is posted buyout-only, so it can't be won with a low bid.
+- New settings: `undercut`, `sellFloor`, `baitShare`, `sellDuration`.
+
 ## 0.2.0 (2026-11-15)
 
 - Fixed: the addon didn't load on WoW Forever (it registered a Classic-only event).

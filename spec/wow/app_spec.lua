@@ -134,6 +134,53 @@ describe("App", function()
     assert.equal(650, rows[1].profit)
   end)
 
+  describe("selling", function()
+    before_each(function()
+      _G.ItemLocation = { CreateFromBagAndSlot = function(_, bag, slot) return { bag = bag, slot = slot } end }
+      _G.C_Container = {
+        GetContainerNumSlots = function(bag) return bag == 0 and 2 or 0 end,
+        GetContainerItemInfo = function(_, slot)
+          return ({ { itemID = 4306, stackCount = 20, hyperlink = "item:4306" },
+                    { itemID = 4305, stackCount = 2, hyperlink = "item:4305" } })[slot]
+        end,
+      }
+      _G.Enum.ItemCommodityStatus = { Item = 1, Commodity = 2 }
+      local ah = _G.C_AuctionHouse
+      ah.IsSellItemValid = function() return true end
+      ah.GetItemCommodityStatus = function() return 2 end
+      ah.GetAvailablePostCount = function(loc) return loc.slot == 1 and 20 or 2 end
+    end)
+
+    after_each(function() _G.ItemLocation, _G.C_Container = nil, nil end)
+
+    it("lists bag items with a suggested price, most valuable first", function()
+      for day = 1, 2 do
+        now = (50 + day) * 86400
+        scan({ { itemID = 4306, count = 10, buyout = 10 * 100 }, { itemID = 4305, count = 1, buyout = 2000 } })
+      end
+      local rows = app:sellRows()
+      assert.equal(2, #rows)
+      -- sorted by total value: 2 bolts x 1999c (3998c) before 20 silk x 99c (1980c)
+      assert.equal(4305, rows[1].item.itemID)
+      assert.equal(1999, rows[1].suggestion.price)
+      assert.equal(3998, rows[1].total)
+      assert.equal(99, rows[2].suggestion.price)
+    end)
+
+    it("refines the suggestion with live prices and announces it", function()
+      local got
+      app.events:on("sellSuggestion", function(item, suggestion, live) got = { item, suggestion, live } end)
+      for day = 1, 2 do
+        now = (50 + day) * 86400
+        scan({ { itemID = 4306, count = 10, buyout = 10 * 100 } })
+      end
+      local item = app:sellRows()[1].item
+      app.sellSearch.onResults(item, { { price = 95, count = 3, mine = false } })
+      assert.equal(94, got[2].price)
+      assert.is_true(got[3])
+    end)
+  end)
+
   it("reports home screen state", function()
     local s = app:homeState()
     assert.is_false(s.scanned)

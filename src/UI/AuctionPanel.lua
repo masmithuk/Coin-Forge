@@ -185,6 +185,8 @@ function AuctionPanel:Build(anchor)
     emptyText = function() return "No conversions defined." end,
   })
 
+  self.sell = ns.SellView.new(self.app, f)
+
   self.footer = W.text(f, "GameFontHighlightSmall", C.muted)
   self.footer:SetPoint("BOTTOMLEFT", 12, 8)
   self.footer:SetPoint("RIGHT", -24, 0)
@@ -198,6 +200,7 @@ function AuctionPanel:Build(anchor)
 end
 
 function AuctionPanel:LayoutLists()
+  if self.sell then self.sell:SetArea(self.filterTabs, self.frame) end
   for _, list in ipairs({ self.deals, self.crafts, self.convs }) do
     list:ClearAllPoints()
     list:SetPoint("TOPLEFT", self.filterTabs, "BOTTOMLEFT", 0, -4)
@@ -209,6 +212,11 @@ function AuctionPanel:Show(anchor)
   if not self.frame then self:Build(anchor) end
   self.frame:Show()
   self:Refresh()
+end
+
+--- Bags changed (an item was posted, looted or moved): refresh the Sell list.
+function AuctionPanel:OnBagsChanged()
+  if self.frame and self.frame:IsShown() and self.view == "sell" then self.sell:Refresh() end
 end
 
 function AuctionPanel:Hide()
@@ -300,14 +308,17 @@ function AuctionPanel:Refresh()
   self.viewTabs:SetTabs({
     { kind = "deals", label = "Deals", help = "Ways to profit from what's listed right now." },
     { kind = "crafting", label = "Crafting", help = CRAFT_HELP },
+    { kind = "sell", label = "Sell", help = "Everything in your bags, priced to sell. Pick one, check it, Post." },
     { kind = "conversions", label = "Conversions", help = CONVERSION_HELP },
   }, self.view)
 
   self.deals:SetShown(self.view == "deals")
   self.crafts:SetShown(self.view == "crafting")
   self.convs:SetShown(self.view == "conversions")
-  self.canDo:SetShown(self.view ~= "conversions") -- everyone can convert
-  self.canDoLabel:SetShown(self.view ~= "conversions")
+  self.sell:SetShown(self.view == "sell")
+  local filterable = self.view == "deals" or self.view == "crafting"
+  self.canDo:SetShown(filterable) -- everyone can convert and sell
+  self.canDoLabel:SetShown(filterable)
 
   if self.view == "deals" then
     local all = PM.filter(self.app.lastOpportunities, { kind = "all", onlyCanDo = self.onlyCanDo })
@@ -322,6 +333,9 @@ function AuctionPanel:Refresh()
     self.footer:SetText(PM.footer(self.app.lastOpportunities, { kind = self.kind, onlyCanDo = self.onlyCanDo }))
   elseif self.view == "crafting" then
     self:RefreshCrafts()
+  elseif self.view == "sell" then
+    self.filterTabs:SetTabs({}, nil)
+    self.footer:SetText("Prices skip bait and price wars. Gear is buyout-only, so nobody wins it with a low bid.")
   else
     self:RefreshConversions()
   end
