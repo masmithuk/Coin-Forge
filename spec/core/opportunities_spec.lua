@@ -23,6 +23,7 @@ describe("Opportunities", function()
       conversions = o.conversions or {},
       otherMarkets = o.otherMarkets or {},
       vendorBuy = function(id) return (o.vendorBuy or {})[id] end,
+      vendorItems = o.vendorItems or {},
     }
     return c
   end
@@ -86,6 +87,17 @@ describe("Opportunities", function()
       assert.equal("disenchant", o.kind)
       assert.is_true(o.profit > 0)
       assert.is_true(o.canDo)
+    end)
+
+    it("shows nothing at all when the character has no Enchanting", function()
+      local I = ns.Data.Disenchant.items
+      local c = ctx({
+        listings = { [3] = { { price = 1, count = 1 } } },
+        items = { [3] = GREEN_ARMOR },
+        values = { [I.VISION_DUST] = 1000, [I.GREATER_MYSTIC] = 1000, [I.LARGE_GLOWING] = 1000 },
+        skills = { Tailoring = 300 },
+      })
+      assert.same({}, Opp.finders.disenchant(c))
     end)
 
     it("marks it as not doable without enough enchanting skill", function()
@@ -152,6 +164,48 @@ describe("Opportunities", function()
       assert.equal(20, o.itemID)
       assert.equal(200, o.cost)       -- 4 * 50
       assert.equal(1800, o.profit)    -- saving vs the cheapest listing
+    end)
+  end)
+
+  describe("from vendor", function()
+    it("finds vendor items you've seen that sell for more on the AH", function()
+      local c = ctx({
+        values = { [7] = 1000, [8] = 100 },
+        vendorItems = {
+          [7] = { price = 200, stack = 5, available = 2, merchant = "Bob", zone = "Ironforge" },
+          [8] = { price = 200, stack = 1, available = -1, merchant = "Sue", zone = "Orgrimmar" },
+        },
+      })
+      local list = Opp.finders.vendorFlip(c)
+      assert.equal(1, #list)
+      local o = list[1]
+      assert.equal("vendorFlip", o.kind)
+      assert.equal(7, o.itemID)
+      assert.equal(2, o.qty)              -- limited stock
+      assert.equal(200, o.maxPrice)
+      assert.equal(400, o.cost)
+      assert.equal(1500, o.profit)        -- 2 * (950 - 200)
+      assert.matches("Bob", o.note)
+      assert.matches("Ironforge", o.note)
+    end)
+
+    it("suggests one purchase of an unlimited item", function()
+      local c = ctx({
+        values = { [7] = 1000 },
+        vendorItems = { [7] = { price = 100, stack = 5, available = -1, merchant = "Bob", zone = "Ironforge" } },
+      })
+      local o = Opp.finders.vendorFlip(c)[1]
+      assert.equal(5, o.qty)
+      assert.equal(5 * (950 - 100), o.profit)
+    end)
+
+    it("needs price history", function()
+      local c = ctx({
+        values = { [7] = 1000 },
+        history = { [7] = 1 },
+        vendorItems = { [7] = { price = 1, stack = 1, available = -1 } },
+      })
+      assert.same({}, Opp.finders.vendorFlip(c))
     end)
   end)
 

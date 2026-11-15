@@ -51,6 +51,34 @@ describe("PanelModel", function()
     assert.equal("3", row.qty)
   end)
 
+  describe("footer", function()
+    local mixed = {
+      { kind = "flip", itemID = 1, profit = 500, canDo = true },
+      { kind = "craft", itemID = 2, profit = 400, canDo = false },
+    }
+    local allDoable = { { kind = "flip", itemID = 1, profit = 500, canDo = true } }
+
+    it("says how many deals the toggle is hiding", function()
+      local text = PM.footer(mixed, { kind = "all", onlyCanDo = true })
+      assert.matches("1 deal", text)
+      assert.matches("1 hidden", text)
+    end)
+
+    it("says when there is nothing to hide, so the toggle never looks broken", function()
+      assert.matches("you can do all of these", PM.footer(allDoable, { kind = "all", onlyCanDo = true }))
+      assert.matches("you can do all of these", PM.footer(allDoable, { kind = "all", onlyCanDo = false }))
+    end)
+
+    it("counts hidden deals only within the selected tab", function()
+      assert.matches("1 hidden", PM.footer(mixed, { kind = "craft", onlyCanDo = true }))
+      assert.not_matches("hidden", PM.footer(mixed, { kind = "flip", onlyCanDo = true }))
+    end)
+
+    it("is empty when there are no deals at all", function()
+      assert.equal("", PM.footer({}, { kind = "all", onlyCanDo = true }))
+    end)
+  end)
+
   it("summarises counts per kind and total profit", function()
     local s = PM.summary(opps)
     assert.equal(3, s.count)

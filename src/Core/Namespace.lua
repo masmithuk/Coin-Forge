@@ -6,4 +6,4 @@ local addonName, ns = ...
 
 ns.name = addonName
 ns.Data = ns.Data or {}
-ns.version = "0.1.0"
+ns.version = "0.2.0"

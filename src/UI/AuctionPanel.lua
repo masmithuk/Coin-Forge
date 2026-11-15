@@ -29,7 +29,16 @@ local CRAFT_COLUMNS = {
   { key = "crafter", title = "Who", min = 90, weight = 2, priority = 4 },
 }
 
-local CRAFT_HELP = "Profit or loss of every recipe your characters know, at today's market prices."
+local CONVERSION_COLUMNS = {
+  { key = "name", title = "Conversion", min = 140, weight = 4, priority = 1 },
+  { key = "cost", title = "Buy for", min = 60, weight = 1, priority = 2, justify = "RIGHT" },
+  { key = "revenue", title = "Sells for", min = 60, weight = 1, priority = 3, justify = "RIGHT" },
+  { key = "profit", title = "Profit", min = 64, weight = 1, priority = 1, justify = "RIGHT" },
+}
+
+local CONVERSION_HELP = "Every essence combine and split, profitable or not. No profession needed."
+
+local CRAFT_HELP ="Profit or loss of every recipe your characters know, at today's market prices."
 
 --- Searches the item in the Blizzard Buy tab. Returns false if the AH UI changed.
 function AuctionPanel.search(name)
@@ -49,7 +58,8 @@ local function itemName(itemID)
 end
 
 function AuctionPanel.new(app)
-  local self = setmetatable({ app = app, view = "deals", kind = "all", profession = "all" }, AuctionPanel)
+  local self = setmetatable(
+    { app = app, view = "deals", kind = "all", profession = "all", convFilter = "all" }, AuctionPanel)
   self.store = app.db.ui.auctionPanel or {}
   app.db.ui.auctionPanel = self.store
   self.onlyCanDo = self.store.onlyCanDo == true
@@ -111,9 +121,18 @@ function AuctionPanel:Build(anchor)
   self.canDo:SetSize(20, 20)
   self.canDo:SetPoint("TOPRIGHT", self.viewTabs, "BOTTOMRIGHT", -110, -2)
   self.canDo:SetChecked(self.onlyCanDo)
-  local canDoLabel = W.text(f, "GameFontHighlightSmall")
-  canDoLabel:SetPoint("LEFT", self.canDo, "RIGHT", 2, 0)
-  canDoLabel:SetText("Only what I can do")
+  self.canDoLabel = W.text(f, "GameFontHighlightSmall")
+  self.canDoLabel:SetPoint("LEFT", self.canDo, "RIGHT", 2, 0)
+  self.canDoLabel:SetText("Only what I can do")
+  self.canDo:SetScript("OnEnter", function(b)
+    GameTooltip:SetOwner(b, "ANCHOR_BOTTOM")
+    GameTooltip:SetText("Only what I can do", 1, 1, 1)
+    GameTooltip:AddLine("Hides disenchanting your Enchanting skill is too low for, and crafts this character "
+      .. "doesn't know. Flips, vendor snipes, conversions and other-AH deals are open to everyone, "
+      .. "so they always stay.", 0.8, 0.8, 0.8, true)
+    GameTooltip:Show()
+  end)
+  self.canDo:SetScript("OnLeave", function() GameTooltip:Hide() end)
   self.canDo:SetScript("OnClick", function(b)
     self.onlyCanDo = b:GetChecked() and true or false
     self.store.onlyCanDo = self.onlyCanDo
@@ -147,6 +166,25 @@ function AuctionPanel:Build(anchor)
     end,
   })
 
+  self.convs = W.list(f, {
+    columns = CONVERSION_COLUMNS,
+    cells = function(r)
+      return {
+        name = r.conversion.name,
+        cost = r.cost and Money.short(r.cost) or "?",
+        revenue = r.revenue and Money.short(r.revenue) or "?",
+        profit = r.profit and Money.short(r.profit) or "needs prices",
+      }
+    end,
+    color = function(r)
+      if r.profit then return { profit = r.profit > 0 and C.good or C.bad } end
+      return { profit = C.muted }
+    end,
+    onClick = function(r) AuctionPanel.search(itemName(r.conversion.inputs[1][1])) end,
+    onEnter = function(row, r) self:ConversionTooltip(row, r) end,
+    emptyText = function() return "No conversions defined." end,
+  })
+
   self.footer = W.text(f, "GameFontHighlightSmall", C.muted)
   self.footer:SetPoint("BOTTOMLEFT", 12, 8)
   self.footer:SetPoint("RIGHT", -24, 0)
@@ -160,7 +198,7 @@ function AuctionPanel:Build(anchor)
 end
 
 function AuctionPanel:LayoutLists()
-  for _, list in ipairs({ self.deals, self.crafts }) do
+  for _, list in ipairs({ self.deals, self.crafts, self.convs }) do
     list:ClearAllPoints()
     list:SetPoint("TOPLEFT", self.filterTabs, "BOTTOMLEFT", 0, -4)
     list:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -8, 26)
@@ -193,7 +231,9 @@ function AuctionPanel:SetView(view)
 end
 
 function AuctionPanel:SetFilter(kind)
-  if self.view == "deals" then self.kind = kind else self.profession = kind end
+  if self.view == "deals" then self.kind = kind
+  elseif self.view == "crafting" then self.profession = kind
+  else self.convFilter = kind end
   self:Refresh()
 end
 
@@ -260,11 +300,16 @@ function AuctionPanel:Refresh()
   self.viewTabs:SetTabs({
     { kind = "deals", label = "Deals", help = "Ways to profit from what's listed right now." },
     { kind = "crafting", label = "Crafting", help = CRAFT_HELP },
+    { kind = "conversions", label = "Conversions", help = CONVERSION_HELP },
   }, self.view)
 
+  self.deals:SetShown(self.view == "deals")
+  self.crafts:SetShown(self.view == "crafting")
+  self.convs:SetShown(self.view == "conversions")
+  self.canDo:SetShown(self.view ~= "conversions") -- everyone can convert
+  self.canDoLabel:SetShown(self.view ~= "conversions")
+
   if self.view == "deals" then
-    self.crafts:Hide()
-    self.deals:Show()
     local all = PM.filter(self.app.lastOpportunities, { kind = "all", onlyCanDo = self.onlyCanDo })
     local tabs = PM.tabs(all)
     for _, t in ipairs(tabs) do t.help = PM.HELP[t.kind] end
@@ -274,16 +319,48 @@ function AuctionPanel:Refresh()
     self.filterTabs:SetTabs(tabs, self.kind)
     local shown = PM.filter(all, { kind = self.kind })
     self.deals:SetItems(shown)
-    local s = PM.summary(shown)
-    self.footer:SetText(s.count > 0
-      and ("%d deals, about %s profit in total. Click a row to find it."):format(s.count, Money.short(s.profit))
-      or "")
-  else
-    self.deals:Hide()
-    self.crafts:Show()
+    self.footer:SetText(PM.footer(self.app.lastOpportunities, { kind = self.kind, onlyCanDo = self.onlyCanDo }))
+  elseif self.view == "crafting" then
     self:RefreshCrafts()
+  else
+    self:RefreshConversions()
   end
   self:LayoutLists()
+end
+
+function AuctionPanel:RefreshConversions()
+  local rows = self.app:conversionRows()
+  local filtered, profitable = {}, 0
+  for _, r in ipairs(rows) do
+    local direction = r.conversion.key:match("^(%a+):")
+    if self.convFilter == "all" or self.convFilter == direction then
+      filtered[#filtered + 1] = r
+      if r.profit and r.profit > 0 then profitable = profitable + 1 end
+    end
+  end
+  self.filterTabs:SetTabs({
+    { kind = "all", label = "All", help = CONVERSION_HELP },
+    { kind = "combine", label = "Combine", help = "Buy 3 lesser essences, right-click to make 1 greater." },
+    { kind = "split", label = "Split", help = "Buy 1 greater essence, right-click to break it into 3 lesser." },
+  }, self.convFilter)
+  self.convs:SetItems(filtered)
+  self.footer:SetText(("%d of %d profitable right now. Right-click the essence in your bags to convert it.")
+    :format(profitable, #filtered))
+end
+
+function AuctionPanel:ConversionTooltip(row, r)
+  local conv = r.conversion
+  local input, inQty = conv.inputs[1][1], conv.inputs[1][2]
+  local output, outQty = conv.outputs[1][1], conv.outputs[1][2]
+  GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
+  GameTooltip:SetText(conv.name, C.gold[1], C.gold[2], C.gold[3])
+  GameTooltip:AddDoubleLine(("Buy %d x %s"):format(inQty, itemName(input) or "?"),
+    r.cost and Money.short(r.cost) or "no price", 0.8, 0.8, 0.8, 1, 1, 1)
+  GameTooltip:AddDoubleLine(("Sell %d x %s"):format(outQty, itemName(output) or "?"),
+    r.revenue and Money.short(r.revenue) or "no price", 0.8, 0.8, 0.8, 1, 1, 1)
+  GameTooltip:AddLine("Sell price is after the AH cut. No profession needed.", 0.6, 0.6, 0.6, true)
+  GameTooltip:AddLine("Click to search for the essence to buy", 0.5, 0.5, 0.5)
+  GameTooltip:Show()
 end
 
 function AuctionPanel:RefreshCrafts()
@@ -304,9 +381,16 @@ function AuctionPanel:RefreshCrafts()
   self.filterTabs:SetTabs(tabs, self.profession)
   self.crafts:SetItems(filtered)
 
-  local profitable = 0
+  local profitable, hidden = 0, 0
   for _, r in ipairs(filtered) do if r.profit and r.profit > 0 then profitable = profitable + 1 end end
-  self.footer:SetText(#filtered > 0 and ("%d of %d recipes make a profit."):format(profitable, #filtered) or "")
+  for _, r in ipairs(rows) do if not r.recipe.knownByPlayer then hidden = hidden + 1 end end
+  local text = #filtered > 0 and ("%d of %d recipes make a profit."):format(profitable, #filtered) or ""
+  if hidden == 0 and #rows > 0 then
+    text = text .. " (this character knows all of them)"
+  elseif hidden > 0 and self.onlyCanDo then
+    text = text .. (" %d known only by your other characters are hidden."):format(hidden)
+  end
+  self.footer:SetText(text)
 end
 
 function AuctionPanel:CraftCells(r)

@@ -32,5 +32,23 @@ function Conversions.evaluate(conv, buyPrice, sellValue)
   local cost = total(conv.inputs, buyPrice)
   local revenue = total(conv.outputs, sellValue)
   if not cost or not revenue then return nil end
-  return { cost = cost, revenue = revenue, profit = revenue - cost }
+  return { cost = math.floor(cost), revenue = math.floor(revenue), profit = math.floor(revenue - cost) }
+end
+
+--- Every conversion with its current profit or loss (for the Conversions view),
+--- most profitable first; ones missing a price come last with profit = nil.
+--- @return { {conversion, cost, revenue, profit}, ... }
+function Conversions.evaluateAll(list, buyPrice, sellValue)
+  local rows = {}
+  for _, conv in ipairs(list) do
+    local r = Conversions.evaluate(conv, buyPrice, sellValue) or {}
+    r.conversion = conv
+    rows[#rows + 1] = r
+  end
+  table.sort(rows, function(a, b)
+    if a.profit and b.profit then return a.profit > b.profit end
+    if a.profit or b.profit then return a.profit ~= nil end
+    return a.conversion.key < b.conversion.key
+  end)
+  return rows
 end

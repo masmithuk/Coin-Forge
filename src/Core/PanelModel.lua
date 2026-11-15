@@ -9,6 +9,7 @@ PanelModel.LABELS = {
   all = "All",
   flip = "Flip",
   vendor = "Vendor",
+  vendorFlip = "From vendor",
   disenchant = "Disenchant",
   conversion = "Convert",
   craft = "Craft",
@@ -21,6 +22,7 @@ PanelModel.HELP = {
   all = "Every opportunity, most profitable first.",
   flip = "Listed well under its usual price. Buy and relist.",
   vendor = "Cheaper than a vendor pays for it. Buy and vendor.",
+  vendorFlip = "A vendor you've visited sells it for less than the AH pays. Buy there, list here.",
   disenchant = "Worth more as enchanting materials than as an item.",
   conversion = "Combine or split essences for a profit.",
   craft = "Buy the reagents now, craft, and sell the result.",
@@ -58,6 +60,28 @@ function PanelModel.summary(opps)
     s.byKind[o.kind] = (s.byKind[o.kind] or 0) + 1
   end
   return s
+end
+
+--- Footer text for the deals list. It always says what the "Only what I can do"
+--- toggle is doing, so ticking it never looks like it did nothing.
+--- @param opps every opportunity (unfiltered)
+--- @param filter { kind, onlyCanDo }
+function PanelModel.footer(opps, filter)
+  local inTab = PanelModel.filter(opps, { kind = filter.kind })
+  if #inTab == 0 then return "" end
+  local doable = PanelModel.filter(inTab, { onlyCanDo = true })
+  local hidden = #inTab - #doable
+  local shown = filter.onlyCanDo and doable or inTab
+
+  if #shown == 0 then
+    return ("Nothing here you can do. %d hidden that need a profession or skill you don't have."):format(hidden)
+  end
+  local s = PanelModel.summary(shown)
+  local text = ("%d deal%s, about %s profit. Click a row to find it."):format(
+    s.count, s.count == 1 and "" or "s", ns.Money.short(s.profit))
+  if hidden == 0 then return text .. " (you can do all of these)" end
+  if filter.onlyCanDo then return text .. (" %d hidden that you can't do."):format(hidden) end
+  return text .. (" %d need a profession or skill you don't have."):format(hidden)
 end
 
 --- Tabs to show: "All" plus only the kinds that have results, so the

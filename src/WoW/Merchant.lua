@@ -33,6 +33,16 @@ function Merchant.read()
   return list
 end
 
+--- Remembers what this vendor sells and where, for "From vendor" deals.
+function Merchant.recordStock(list, store, merchant, zone)
+  for _, m in ipairs(list) do
+    store[m.itemID] = {
+      price = math.floor(m.price / math.max(1, m.stack)), stack = m.stack,
+      available = m.available, merchant = merchant, zone = zone,
+    }
+  end
+end
+
 --- Stores the per-unit vendor price of every item in `list`.
 function Merchant.recordPrices(list, vendorPrices)
   for _, m in ipairs(list) do

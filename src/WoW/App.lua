@@ -17,6 +17,7 @@ local TOP_DEALS_SAVED = 5
 function App.new(saved, clock)
   saved.settings = ns.Settings.apply(saved.settings)
   saved.vendorPrices = saved.vendorPrices or {}
+  saved.vendorItems = saved.vendorItems or {}
   saved.ui = saved.ui or {}
   saved.recipes = saved.recipes or {}
 
@@ -137,6 +138,7 @@ function App:opportunityContext(result)
     history = function(id) return self:history(id, key) end,
     itemInfo = ns.ItemInfo.get,
     vendorBuy = function(id) return self.db.vendorPrices[id] end,
+    vendorItems = self.db.vendorItems,
     cutRate = ns.Fees.cutRate(neutral),
     settings = self.settings,
     skills = self.skills,
@@ -162,7 +164,36 @@ end
 
 function App:onScanComplete(result)
   self.prices:prune(self.settings.historyDays)
+  -- Vendor and disenchant deals need item details the client loads lazily.
+  -- Ask for them now; onItemInfoReceived re-runs the finders as they arrive.
+  if C_Item and C_Item.RequestLoadItemDataByID then
+    for itemID in pairs(result.listings) do
+      if not ns.ItemInfo.get(itemID) then C_Item.RequestLoadItemDataByID(itemID) end
+    end
+  end
   self:findOpportunities(result)
+end
+
+--- Called (debounced) when item data arrives from the server.
+function App:onItemInfoReceived()
+  if self.scanner.lastResult then self:findOpportunities(self.scanner.lastResult) end
+end
+
+--- Every essence conversion with its live profit or loss, for the Conversions view.
+-- Inputs cost the cheapest listing from this session's scan (or market value).
+function App:conversionRows()
+  local key, neutral = self:market()
+  local result = self.scanner.lastResult
+  local listings = result and result.marketKey == key and result.listings or {}
+  local function buyPrice(id)
+    local l = listings[id]
+    return l and l[1] and l[1].price or self:value(id, key)
+  end
+  local function sellValue(id)
+    local v = self:value(id, key)
+    return v and ns.Fees.net(v, neutral) or nil
+  end
+  return ns.Conversions.evaluateAll(ns.Conversions.all(), buyPrice, sellValue)
 end
 
 --- Profit or loss of every known recipe at current market prices.
@@ -184,6 +215,7 @@ end
 function App:merchantDeals()
   local items = ns.Merchant.read()
   ns.Merchant.recordPrices(items, self.db.vendorPrices)
+  ns.Merchant.recordStock(items, self.db.vendorItems, UnitName("npc"), GetZoneText and GetZoneText())
   local key, neutral = self:market()
   return ns.VendorAnalysis.evaluate(items, {
     value = function(id) return self:value(id, key) end,

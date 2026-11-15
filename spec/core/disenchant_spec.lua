@@ -94,6 +94,19 @@ describe("Conversions", function()
     assert.same({ cost = 300, revenue = 500, profit = 200 }, r)
   end)
 
+  it("lists every conversion with its current profit or loss, best first", function()
+    local buy = { [10938] = 100, [10939] = 500 }
+    local sell = { [10938] = 95, [10939] = 475 }
+    local rows = Conv.evaluateAll(
+      { Conv.byKey("combine:10938"), Conv.byKey("split:10939"), Conv.byKey("combine:10998") },
+      function(id) return buy[id] end, function(id) return sell[id] end)
+    assert.equal(3, #rows)
+    assert.equal("combine:10938", rows[1].conversion.key)
+    assert.equal(175, rows[1].profit)  -- 475 - 300
+    assert.equal(-215, rows[2].profit) -- 285 - 500
+    assert.is_nil(rows[3].profit)      -- astral essences have no prices
+  end)
+
   it("returns nil when a price is missing", function()
     local c = Conv.byKey("split:10939")
     assert.is_nil(Conv.evaluate(c, function() return 1 end, function() return nil end))

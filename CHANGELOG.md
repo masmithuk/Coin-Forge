@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0 (2026-11-15)
+
+- Fixed: the addon didn't load on WoW Forever (it registered a Classic-only event).
+- New Conversions view: every essence combine/split with live profit or loss.
+- New "From vendor" deals: items a vendor you've visited sells for less than the AH pays, with where to buy them.
+- Disenchant deals are hidden for characters without Enchanting.
+- Fixed: vendor snipes and disenchant deals were missed for items the client hadn't loaded yet; deals now
+  update as item data arrives after a scan.
+- The "Only what I can do" toggle now says what it's hiding.
+
 ## 0.1.0 (2026-11-15)
 
 First release for WoW Forever (interface 16001).

@@ -27,7 +27,9 @@ local finders = {}
 Opportunities.finders = finders
 
 -- Display order of kinds (also used by the panel tabs).
-Opportunities.KINDS = { "flip", "vendor", "disenchant", "conversion", "craft", "craftInstead", "arbitrage" }
+Opportunities.KINDS = {
+  "flip", "vendor", "vendorFlip", "conversion", "arbitrage", "disenchant", "craft", "craftInstead",
+}
 
 local function trusted(ctx, itemID, history)
   return (history or ctx.history)(itemID) >= ctx.settings.minHistoryDays
@@ -83,8 +85,11 @@ function finders.vendor(ctx)
 end
 
 --- Disenchant: gear cheaper than the materials it breaks into.
+-- Hidden entirely for characters without Enchanting; enchanters whose skill is
+-- too low still see them, marked with the skill needed.
 function finders.disenchant(ctx)
   local list = {}
+  if not ctx.skills.Enchanting then return list end
   for itemID, listings in pairs(ctx.listings) do
     local item = ctx.itemInfo(itemID)
     if item and ns.Disenchant.isDisenchantable(item) then
@@ -223,6 +228,31 @@ function finders.craftInstead(ctx)
             maxPrice = listed, name = recipe.name },
           recipe.knownByPlayer == true,
           "Make it for " .. ns.Money.short(perUnit) .. ". " .. crafterNote(recipe))
+      end
+    end
+  end
+  return list
+end
+
+--- From vendor: items you've seen at a vendor that sell for more on the AH.
+-- Suggests the whole limited stock, or one purchase of an unlimited item
+-- (flooding the AH with an unlimited item just crashes its price).
+-- ctx.vendorItems[itemID] = { price (per unit), stack, available, merchant, zone }
+function finders.vendorFlip(ctx)
+  local list = {}
+  for itemID, v in pairs(ctx.vendorItems or {}) do
+    local value = ctx.value(itemID)
+    if value and v.price and v.price > 0 and trusted(ctx, itemID) then
+      local perUnit = netOf(ctx, value) - v.price
+      if perUnit > 0 then
+        local qty = (v.available or -1) > 0 and v.available or (v.stack or 1)
+        local where = v.merchant and ("Buy from " .. v.merchant .. (v.zone and (" in " .. v.zone) or ""))
+          or "Buy from a vendor"
+        if (v.available or -1) > 0 then where = where .. " (limited stock)" end
+        emit(list, ctx, "vendorFlip", itemID,
+          { qty = qty, cost = v.price * qty, revenue = math.floor(netOf(ctx, value) * qty),
+            profit = math.floor(perUnit * qty), maxPrice = v.price },
+          true, where)
       end
     end
   end

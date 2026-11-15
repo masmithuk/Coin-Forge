@@ -29,7 +29,13 @@ local stateful = {
   GetHeight = function(self) return self.height or 300 end,
   SetChecked = function(self, v) self.checked = v end,
   GetChecked = function(self) return self.checked end,
-  RegisterEvent = function(self, e) self.events[e] = true end,
+  RegisterEvent = function(self, e)
+    -- Like the retail-based client (WoW Forever): unknown event names are a hard error.
+    if M.validEvents and not M.validEvents[e] then
+      error('Attempt to register unknown event "' .. tostring(e) .. '"', 2)
+    end
+    self.events[e] = true
+  end,
   UnregisterEvent = function(self, e) self.events[e] = nil end,
   GetName = function(self) return self.name end,
   GetParent = function(self) return self.parent end,

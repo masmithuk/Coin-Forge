@@ -6,9 +6,13 @@ local events = CreateFrame("Frame")
 local handlers = {}
 local app, home, minimap, panel, merchant, nameplates, lootRecorder
 
+-- Registers a handler for a game event. Events differ between game versions,
+-- and the retail-based Forever client raises an error for unknown names, which
+-- would stop this file loading. So only register events the client knows.
 local function on(event, fn)
-  handlers[event] = fn
-  events:RegisterEvent(event)
+  local isValid = _G.C_EventUtils and _G.C_EventUtils.IsEventValid
+  if isValid and not isValid(event) then return end
+  if pcall(events.RegisterEvent, events, event) then handlers[event] = fn end
 end
 
 -- Runs fn at most once per `delay` seconds, after events stop arriving.
@@ -186,8 +190,12 @@ for _, e in ipairs({ "TRADE_SKILL_SHOW", "TRADE_SKILL_UPDATE", "TRADE_SKILL_LIST
 end
 on("SKILL_LINES_CHANGED", function() app:refreshSkills() end)
 
--- Item names arrive asynchronously; repaint open lists once they settle.
-on("GET_ITEM_INFO_RECEIVED", debounce(0.5, function() panel:Refresh() end))
+-- Item details arrive asynchronously after a scan. Once they settle, re-run the
+-- finders (vendor and disenchant deals need them) and repaint the panel.
+on("GET_ITEM_INFO_RECEIVED", debounce(1, function()
+  app:onItemInfoReceived()
+  panel:Refresh()
+end))
 
 events:SetScript("OnEvent", function(_, event, ...)
   local handler = handlers[event]

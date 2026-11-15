@@ -93,6 +93,47 @@ describe("App", function()
     assert.equal(100 + 2 * 950, ev)
   end)
 
+  it("finds vendor snipes for items whose data loads after the scan", function()
+    items[4306] = nil -- not cached by the client yet
+    local requested = {}
+    _G.C_Item = { RequestLoadItemDataByID = function(id) requested[id] = true end }
+    app.settings.minProfit = 1
+    scan({ { itemID = 4306, count = 10, buyout = 10 * 5 } }) -- 5c each, vendor pays 150c
+    assert.is_true(requested[4306])
+    assert.same({}, app.lastOpportunities)
+
+    items[4306] = { "Silk Cloth", nil, 1, 30, 0, "Trade", "Cloth", 20, "", 1, 150, 7 }
+    app:onItemInfoReceived()
+    assert.equal("vendor", app.lastOpportunities[1].kind)
+    assert.equal(1450, app.lastOpportunities[1].profit)
+    _G.C_Item = nil
+  end)
+
+  it("records vendor stock with where to buy it", function()
+    _G.GetMerchantNumItems = function() return 1 end
+    _G.GetMerchantItemInfo = function() return "Silk", 1, 300, 5, 3, true, true, false end
+    _G.GetMerchantItemID = function() return 4306 end
+    _G.UnitName = function(unit) return unit == "npc" and "Bob" or "Thrall" end
+    _G.GetZoneText = function() return "Ironforge" end
+    app:merchantDeals()
+    assert.same({ price = 60, stack = 5, available = 3, merchant = "Bob", zone = "Ironforge" },
+      saved.vendorItems[4306])
+    assert.equal(60, saved.vendorPrices[4306])
+  end)
+
+  it("lists every essence conversion with live prices", function()
+    for day = 1, 2 do
+      now = (50 + day) * 86400
+      scan({ { itemID = 10938, count = 10, buyout = 10 * 100 }, { itemID = 10939, count = 2, buyout = 2 * 1000 } })
+    end
+    local rows = app:conversionRows()
+    assert.equal(#ns.Conversions.all(), #rows)
+    assert.equal("combine:10938", rows[1].conversion.key)
+    assert.equal(300, rows[1].cost)
+    assert.equal(950, rows[1].revenue)
+    assert.equal(650, rows[1].profit)
+  end)
+
   it("reports home screen state", function()
     local s = app:homeState()
     assert.is_false(s.scanned)

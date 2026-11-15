@@ -64,6 +64,26 @@ describe("UI smoke test", function()
     assert.is_function(_G.ForeverGold_OnCompartmentClick)
   end)
 
+  it("still boots on a client that rejects event names it doesn't know (WoW Forever)", function()
+    wow.uninstall()
+    -- Events the Forever (retail-based) client knows; classic-only TRADE_SKILL_UPDATE is missing.
+    local valid = {}
+    for _, e in ipairs({ "ADDON_LOADED", "AUCTION_HOUSE_SHOW", "AUCTION_HOUSE_CLOSED", "REPLICATE_ITEM_LIST_UPDATE",
+      "LOOT_OPENED", "LOOT_SLOT_CLEARED", "LOOT_CLOSED", "NAME_PLATE_UNIT_ADDED", "NAME_PLATE_UNIT_REMOVED",
+      "PLAYER_TARGET_CHANGED", "UPDATE_MOUSEOVER_UNIT", "MERCHANT_SHOW", "MERCHANT_UPDATE", "TRADE_SKILL_SHOW",
+      "TRADE_SKILL_LIST_UPDATE", "SKILL_LINES_CHANGED", "GET_ITEM_INFO_RECEIVED" }) do valid[e] = true end
+    wow.validEvents = valid
+    local fresh = wow.install({ C_EventUtils = { IsEventValid = function(e) return valid[e] == true end } })
+    local ok, err = pcall(function()
+      local freshNs = addon.load(addon.tocFiles())
+      fresh.__created[1]:Fire("OnEvent", "ADDON_LOADED", "ForeverGold")
+      assert.is_table(freshNs.app)
+    end)
+    wow.validEvents = nil
+    assert.is_true(ok, tostring(err))
+    assert.is_not_nil(_G.ForeverGoldMinimapButton)
+  end)
+
   it("opens the home screen from the slash command and minimap", function()
     _G.SlashCmdList.FOREVERGOLD("")
     assert.is_true(_G.ForeverGoldHome.shown)
@@ -133,11 +153,29 @@ describe("UI smoke test", function()
       reagents = { { itemID = 4306, qty = 4 } }, crafters = { Alt = true },
     }
     assert.is_true(clickTab("crafting"))
+    assert.is_true(clickTab("conversions"))
+    assert.is_true(clickTab("split"))
+    local convList
+    for _, f in ipairs(env.__created) do
+      if f.header and f.items and f.items[1] and f.items[1].conversion then convList = f end
+    end
+    assert.is_not_nil(convList, "expected the conversions list")
+    for _, item in ipairs(convList.items) do assert.matches("^split:", item.conversion.key) end
     assert.is_true(clickTab("deals"))
-    -- the "only what I can do" toggle
+    fire("GET_ITEM_INFO_RECEIVED", 4306)
+    -- the "only what I can do" toggle really removes the deal this character can't do
+    local dealList
+    for _, f in ipairs(env.__created) do
+      for _, item in ipairs(f.header and f.items or {}) do
+        if item.canDo == false then dealList = f end
+      end
+    end
+    assert.is_not_nil(dealList, "expected the deals list to show the deal this character can't do")
     for _, f in ipairs(env.__created) do
       if f.scripts.OnClick and f.checked ~= nil then f.checked = true; f:Fire("OnClick") end
     end
+    assert.is_true(#dealList.items >= 1)
+    for _, item in ipairs(dealList.items) do assert.is_true(item.canDo) end
   end)
 
   it("highlights profitable merchant items", function()

@@ -22,6 +22,8 @@ function HomeModel.features()
       text = "Press Scan on the ForeverGold tab. Prices build up over days, so scan whenever you visit." },
     { title = "Deals at the auctioneer",
       text = "Flips, vendor snipes, disenchanting, essence conversions, crafts and other-AH arbitrage, best first." },
+    { title = "No-profession money",
+      text = "The Conversions tab shows essence combine/split profit. Vendor and From vendor deals need no skills." },
     { title = "Profitable mobs",
       text = "A coin marks mobs worth farming. Values are learned from what you loot, across all your characters." },
     { title = "Vendor flips",
