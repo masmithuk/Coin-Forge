@@ -219,6 +219,11 @@ function AuctionPanel:OnBagsChanged()
   if self.frame and self.frame:IsShown() and self.view == "sell" then self.sell:Refresh() end
 end
 
+--- The auction house can take requests again: re-enable Post if it was waiting.
+function AuctionPanel:OnAuctionHouseReady()
+  if self.sell then self.sell:OnAuctionHouseReady() end
+end
+
 function AuctionPanel:Hide()
   if self.frame then self.frame:Hide() end
 end

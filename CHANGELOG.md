@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.1 (2026-11-15)
+
+- Fixed: Post could stay greyed out after selecting an item. The live price check keeps the AH busy for a
+  moment, and nothing re-enabled the button afterwards. It now turns back on by itself.
+- Post is never disabled without a visible reason (status line and button tooltip).
+- New price list under the sell inputs: every listing with what the pricing made of it, plus where your
+  price sits, so you can check the maths.
+
 ## 0.3.0 (2026-11-15)
 
 - New Sell tab, like Auctionator's selling page: every sellable bag item with a suggested price. Click one and

@@ -27,6 +27,10 @@ local stateful = {
   SetSize = function(self, w, h) self.width, self.height = w, h end,
   GetWidth = function(self) return self.width or 300 end,
   GetHeight = function(self) return self.height or 300 end,
+  Enable = function(self) self.enabled = true end,
+  Disable = function(self) self.enabled = false end,
+  IsEnabled = function(self) return self.enabled ~= false end,
+  SetEnabled = function(self, v) self.enabled = v and true or false end,
   SetChecked = function(self, v) self.checked = v end,
   GetChecked = function(self) return self.checked end,
   RegisterEvent = function(self, e)
@@ -41,7 +45,11 @@ local stateful = {
   GetParent = function(self) return self.parent end,
   GetStringWidth = function(self) return #(self.text or "") * 6 end,
   CreateTexture = function(self) return M.frame(self) end,
-  CreateFontString = function(self) return M.frame(self) end,
+  CreateFontString = function(self)
+    local fs = M.frame(self)
+    if M.track then M.track[#M.track + 1] = fs end
+    return fs
+  end,
   CreateAnimationGroup = function(self) return M.frame(self) end,
   CreateAnimation = function(self) return M.frame(self) end,
   GetObjectType = function() return "Frame" end,
@@ -99,6 +107,7 @@ function M.install(overrides)
     return f
   end
   env.__created = created
+  M.track = created
   env.UIParent = M.frame(nil, "UIParent")
   env.GameTooltip = M.frame(env.UIParent, "GameTooltip")
   env.Minimap = M.frame(env.UIParent, "Minimap")

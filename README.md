@@ -82,7 +82,12 @@ Open the **Sell** tab on the ForeverGold panel at any auction house.
    prices, including which listings are yours.
 3. Change the price (type `1g 20s`, `85s` or plain copper), the quantity or the duration (2 h / 8 h / 24 h)
    if you like. The total, what you'll get after the cut, and the deposit update as you type.
-4. Press **Post** (or Enter). ForeverGold moves on to the next item.
+4. Check the maths in the **price list** under the inputs: every listing on the AH with what ForeverGold made of
+   it (*bait, ignored*, *price war, ignored*, *your auction*, *cheapest real listing: undercut by 1c*), with
+   **your price** shown where your auction would sit. The line above it gives the normal price and the floor.
+5. Press **Post** (or Enter). ForeverGold moves on to the next item. If Post is greyed out, the line under the
+   inputs (and the button's tooltip) says why. When the AH is briefly busy after a price check, it turns
+   back on by itself.
 
 ### How the price is chosen (and the traps it avoids)
 

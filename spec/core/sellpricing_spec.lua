@@ -88,6 +88,27 @@ describe("SellPricing", function()
     assert.equal(1, s.price)
   end)
 
+  describe("explains every listing so you can check the maths", function()
+    it("marks bait, the competitor and the rest", function()
+      local s = suggest({ value = 1000, listings = { L(100, 2), L(980, 20), L(1000, 30) } })
+      assert.same({ "bait", "undercut", "above" }, { s.listings[1].status, s.listings[2].status,
+        s.listings[3].status })
+      assert.equal(600, s.floor)
+    end)
+
+    it("marks price war listings and your own", function()
+      local s = suggest({ value = 1000, listings = { L(300, 100), L(900, 10, true), L(950, 5) } })
+      assert.same({ "war", "yours", "above" }, { s.listings[1].status, s.listings[2].status,
+        s.listings[3].status })
+    end)
+
+    it("does not change the caller's listings", function()
+      local input = { L(950, 5) }
+      suggest({ value = 1000, listings = input })
+      assert.is_nil(input[1].status)
+    end)
+  end)
+
   it("reports what you'd receive after the AH cut", function()
     local s = suggest({ value = 1000, listings = { L(1001, 1) } })
     assert.equal(1000, s.price)

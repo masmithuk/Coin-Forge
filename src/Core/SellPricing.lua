@@ -43,7 +43,7 @@ function SellPricing.suggest(input)
 
   if not reference then
     return { action = "manual", reason = "No price data yet. Scan the AH or set a price yourself.",
-      ignored = { qty = 0, count = 0 } }
+      ignored = { qty = 0, count = 0 }, listings = {} }
   end
 
   local floor = reference * s.sellFloor
@@ -80,6 +80,17 @@ function SellPricing.suggest(input)
   end
 
   local ignored = { qty = ignoreCheap and cheapQty or 0, count = ignoreCheap and cheapCount or 0 }
+
+  -- A copy of the listings saying what we made of each one, for display.
+  local explained = {}
+  for i, l in ipairs(listings) do
+    local status
+    if ignoreCheap and l.price < floor then status = isBait and "bait" or "war"
+    elseif l == competitor then status = l.mine and "yours" or "undercut"
+    elseif l.mine then status = "yours"
+    else status = "above" end
+    explained[i] = { price = l.price, count = l.count, mine = l.mine, status = status }
+  end
   if isWar then
     reason = ("Price war: %d cheap units are %d%% under normal. Not following them down; "
       .. "they usually sell out or expire. "):format(cheapQty, math.floor((1 - s.sellFloor) * 100 + 0.5))
@@ -94,6 +105,7 @@ function SellPricing.suggest(input)
   local result = {
     action = "post", price = price, net = net, reason = reason, reference = math.floor(reference),
     competitor = competitor and competitor.price or nil, ignored = ignored,
+    listings = explained, floor = math.floor(floor), trusted = trusted,
   }
   if input.vendorSell and input.vendorSell > 0 and net <= input.vendorSell then
     result.action = "vendor"

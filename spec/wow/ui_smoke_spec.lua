@@ -218,8 +218,27 @@ describe("UI smoke test", function()
     assert.is_not_nil(row, "expected a bag item row")
     row:Fire("OnClick", "LeftButton")
 
+    -- the live search keeps the AH busy for a moment: Post must say why it's off...
+    local ready = false
+    ah.IsThrottledMessageSystemReady = function() return ready end
     -- live results arrive: the single 5c unit is bait, so we undercut 100c
     fire("COMMODITY_SEARCH_RESULTS_UPDATED", 4306)
+    local postButton = find(function(f) return f.text == "Post" and f.scripts.OnClick end)
+    assert.is_false(postButton:IsEnabled())
+    assert.is_not_nil(find(function(f) return type(f.text) == "string" and f.text:find("busy") end),
+      "expected a visible reason while Post is disabled")
+    -- the price list shows the maths: bait ignored, our price, then the listing we undercut
+    local priceList = find(function(f)
+      return f.header and f.items and f.items[1] and f.items[1].status ~= nil
+    end)
+    assert.is_not_nil(priceList, "expected the live price list")
+    local shown = {}
+    for _, r in ipairs(priceList.items) do shown[#shown + 1] = r.price .. ":" .. r.status end
+    assert.same({ "5:bait", "99:new", "100:undercut" }, shown)
+    -- ...and turn itself back on when the AH is ready
+    ready = true
+    fire("AUCTION_HOUSE_THROTTLED_SYSTEM_READY")
+    assert.is_true(postButton:IsEnabled())
     local priceBox = find(function(f) return f.text == ns.Money.format(99) end)
     assert.is_not_nil(priceBox, "expected the price box to hold 99c")
 

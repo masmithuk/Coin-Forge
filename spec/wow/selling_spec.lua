@@ -102,6 +102,29 @@ describe("Selling adapters", function()
     end)
   end)
 
+  describe("SellView.postState", function()
+    before_each(function()
+      wow.install()
+      ns = addon.loadWith({ "src/UI/Widgets.lua", "src/WoW/Api.lua", "src/WoW/ItemInfo.lua", "src/WoW/Bags.lua",
+        "src/WoW/Poster.lua", "src/UI/SellView.lua" })
+    end)
+
+    it("is never off without saying why", function()
+      local cases = {
+        { nil, 5, 10, true, "type a price" },
+        { 100, 0, 10, true, "quantity must be between 1 and 10" },
+        { 100, 11, 10, true, "quantity must be between 1 and 10" },
+        { 100, 5, 10, false, "busy" },
+      }
+      for _, c in ipairs(cases) do
+        local enabled, message = ns.SellView.postState(c[1], c[2], c[3], c[4])
+        assert.is_false(enabled)
+        assert.matches(c[5], message, 1, true)
+      end
+      assert.is_true(ns.SellView.postState(100, 5, 10, true))
+    end)
+  end)
+
   describe("Poster", function()
     it("posts commodities by unit price and gear as buyout-only", function()
       local posted = installBags({ [0] = { [1] = { 4306, 20, true }, [2] = { 900, 1, false } } })

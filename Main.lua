@@ -194,6 +194,7 @@ on("SKILL_LINES_CHANGED", function() app:refreshSkills() end)
 for _, e in ipairs({ "COMMODITY_SEARCH_RESULTS_UPDATED", "ITEM_SEARCH_RESULTS_UPDATED" }) do
   on(e, function(...) app.sellSearch:onEvent(e, ...) end)
 end
+on("AUCTION_HOUSE_THROTTLED_SYSTEM_READY", function() panel:OnAuctionHouseReady() end)
 on("BAG_UPDATE_DELAYED", debounce(0.3, function() panel:OnBagsChanged() end))
 
 -- Item details arrive asynchronously after a scan. Once they settle, re-run the
