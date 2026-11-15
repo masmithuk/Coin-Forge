@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.2 (2026-11-15)
+
+- Searching an item anywhere (Blizzard's Buy tab, a deal row, or the Sell tab) now updates its price data and
+  its listings in the deal list, so prices stay current between full scans.
+- The Sell tab loads every page of an item's results before pricing it, so the price list shows all
+  current postings.
+
 ## 0.3.1 (2026-11-15)
 
 - Fixed: Post could stay greyed out after selecting an item. The live price check keeps the AH busy for a

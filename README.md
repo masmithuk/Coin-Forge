@@ -50,6 +50,9 @@ The minimap coin's tooltip and the home screen explain all of this in game as we
   price of that day's scan, so one silly listing can't distort it.
 - **Profit is always after the AH cut**: 5% on faction auction houses, 15% on the neutral ones (Booty Bay,
   Gadgetzan, Everlook). Deposits are ignored because they're refunded when an item sells.
+- **Searches keep prices fresh.** Whenever you search an item (in Blizzard's Buy tab, by clicking a deal, or
+  by picking it in the Sell tab), all its current listings become today's price for it, and the deal list
+  updates. You don't need a full scan for one item.
 - **Each auction house is its own market.** Prices from the Horde, Alliance and Neutral AHs are kept apart,
   and that separation is what makes arbitrage deals possible.
 - **Disenchant values** use the classic disenchanting tables (`src/Data/Disenchant.lua`). If WoW Forever changes

@@ -86,6 +86,56 @@ describe("Selling adapters", function()
       assert.same({ { price = 90, count = 5, mine = true }, { price = 100, count = 50, mine = false } }, got.listings)
     end)
 
+    it("records results of searches made anywhere, e.g. in Blizzard's Buy tab", function()
+      installBags({ [0] = {} })
+      _G.C_AuctionHouse.GetNumCommoditySearchResults = function() return 1 end
+      _G.C_AuctionHouse.GetCommoditySearchResultInfo = function() return { unitPrice = 70, quantity = 4 } end
+      ns = addon.loadWith(FILES)
+      local recorded
+      local search = ns.SellSearch.new(function() error("no sell search was pending") end,
+        function(itemID, listings) recorded = { itemID, listings } end)
+      search:onEvent("COMMODITY_SEARCH_RESULTS_UPDATED", 2589)
+      assert.same({ 2589, { { price = 70, count = 4, mine = false } } }, recorded)
+    end)
+
+    it("loads every page of results before using them", function()
+      local full, more = false, 0
+      installBags({ [0] = { [1] = { 4306, 20, true } } })
+      local ah = _G.C_AuctionHouse
+      ah.SendSearchQuery = function() end
+      ah.HasFullCommoditySearchResults = function() return full end
+      ah.RequestMoreCommoditySearchResults = function() more = more + 1 end
+      ah.GetNumCommoditySearchResults = function() return full and 2 or 1 end
+      ah.GetCommoditySearchResultInfo = function(_, i)
+        return ({ { unitPrice = 90, quantity = 5 }, { unitPrice = 200, quantity = 50 } })[i]
+      end
+      ns = addon.loadWith(FILES)
+      local got, recorded
+      local search = ns.SellSearch.new(function(_, listings) got = listings end,
+        function(_, listings) recorded = listings end)
+      search:request(ns.Bags.sellable()[1])
+      search:onEvent("COMMODITY_SEARCH_RESULTS_UPDATED", 4306)
+      assert.equal(1, more)
+      assert.is_nil(got)
+      assert.is_nil(recorded)
+      full = true
+      search:onEvent("COMMODITY_SEARCH_RESULTS_UPDATED", 4306)
+      assert.equal(2, #got)
+      assert.equal(2, #recorded)
+    end)
+
+    it("doesn't page through other people's searches (that would waste the AH's request limit)", function()
+      local more = 0
+      installBags({ [0] = {} })
+      local ah = _G.C_AuctionHouse
+      ah.HasFullCommoditySearchResults = function() return false end
+      ah.RequestMoreCommoditySearchResults = function() more = more + 1 end
+      ns = addon.loadWith(FILES)
+      local search = ns.SellSearch.new(function() end, function() error("partial results recorded") end)
+      search:onEvent("COMMODITY_SEARCH_RESULTS_UPDATED", 2589)
+      assert.equal(0, more)
+    end)
+
     it("reads live item results, skipping bid-only auctions", function()
       installBags({ [0] = { [1] = { 900, 1, false } } })
       _G.C_AuctionHouse.SendSellSearchQuery = function() end

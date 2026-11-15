@@ -141,6 +141,11 @@ local function start()
     nameplates:refreshAll()
   end)
 
+  -- A live search updated an item's prices: refresh the deals once searches settle.
+  app.events:on("pricesUpdated", debounce(0.5, function()
+    if app.scanner.lastResult then app:findOpportunities() else panel:Refresh() end
+  end))
+
   setupCommands()
   setupAddonCompartment()
 

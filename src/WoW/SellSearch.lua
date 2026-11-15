@@ -1,17 +1,26 @@
--- SellSearch: live prices for one item, fetched when you select it to sell.
+-- SellSearch: live prices from auction house searches.
 --
--- A full scan can be up to 15 minutes old; a live search is current and also
--- tells us which listings are yours, so we never undercut ourselves.
+-- Two jobs:
+--   * When you pick an item to sell, search it. A full scan can be up to 15
+--     minutes old; a live search is current and also says which listings are
+--     yours, so we never undercut ourselves.
+--   * Listen to every search, including ones you make in Blizzard's Buy tab, and
+--     hand complete results to `onListings` so the price data stays current.
+--
+-- Results can arrive a page at a time. Our own search pages through to the end
+-- before anything is used. Other searches are only recorded once complete:
+-- paging them ourselves would spend the AH's request limit.
 local _, ns = ...
 
 local SellSearch = {}
 SellSearch.__index = SellSearch
 ns.SellSearch = SellSearch
 
---- @param onResults function(item, listings) listings cheapest first:
----   { {price (per unit), count, mine} }
-function SellSearch.new(onResults)
-  return setmetatable({ onResults = onResults }, SellSearch)
+--- @param onResults function(item, listings) for the item you picked to sell.
+--- @param onListings function(itemID, listings) for every complete search (optional).
+---   listings are cheapest first: { {price (per unit), count, mine} }
+function SellSearch.new(onResults, onListings)
+  return setmetatable({ onResults = onResults, onListings = onListings }, SellSearch)
 end
 
 local function sorts()
@@ -58,15 +67,38 @@ local function itemResults(itemKey)
   return sortByPrice(list)
 end
 
+local function isComplete(hasFull, key)
+  return not hasFull or hasFull(key)
+end
+
 function SellSearch:onEvent(event, arg)
+  local ah = C_AuctionHouse
   local item = self.pending
-  if not item then return end
-  if event == "COMMODITY_SEARCH_RESULTS_UPDATED" and item.isCommodity and arg == item.itemID then
+  local itemID, listings, ours
+
+  if event == "COMMODITY_SEARCH_RESULTS_UPDATED" and arg then
+    itemID = arg
+    ours = item and item.isCommodity and item.itemID == itemID
+    if not isComplete(ah.HasFullCommoditySearchResults, itemID) then
+      if ours and ah.RequestMoreCommoditySearchResults then ah.RequestMoreCommoditySearchResults(itemID) end
+      return
+    end
+    listings = commodityResults(itemID)
+  elseif event == "ITEM_SEARCH_RESULTS_UPDATED" and type(arg) == "table" and arg.itemID then
+    itemID = arg.itemID
+    ours = item and not item.isCommodity and item.itemID == itemID
+    if not isComplete(ah.HasFullItemSearchResults, arg) then
+      if ours and ah.RequestMoreItemSearchResults then ah.RequestMoreItemSearchResults(arg) end
+      return
+    end
+    listings = itemResults(arg)
+  else
+    return
+  end
+
+  if self.onListings then self.onListings(itemID, listings) end
+  if ours then
     self.pending = nil
-    self.onResults(item, commodityResults(arg))
-  elseif event == "ITEM_SEARCH_RESULTS_UPDATED" and not item.isCommodity
-    and type(arg) == "table" and arg.itemID == item.itemID then
-    self.pending = nil
-    self.onResults(item, itemResults(arg))
+    self.onResults(item, listings)
   end
 end

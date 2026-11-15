@@ -167,6 +167,18 @@ describe("App", function()
       assert.equal(99, rows[2].suggestion.price)
     end)
 
+    it("folds live search results into the price data and the current deals", function()
+      local updated = 0
+      app.events:on("pricesUpdated", function() updated = updated + 1 end)
+      scan({ { itemID = 4306, count = 10, buyout = 10 * 100 } })
+      app.sellSearch.onListings(4306, { { price = 60, count = 2, mine = false }, { price = 100, count = 9 } })
+      local info = app.prices:getInfo("Forever|Horde", 4306)
+      assert.equal(60, info.low)
+      assert.equal(11, info.qty)
+      assert.equal(60, app.scanner.lastResult.listings[4306][1].price)
+      assert.equal(1, updated)
+    end)
+
     it("refines the suggestion with live prices and announces it", function()
       local got
       app.events:on("sellSuggestion", function(item, suggestion, live) got = { item, suggestion, live } end)

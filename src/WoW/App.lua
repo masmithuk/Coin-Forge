@@ -36,6 +36,8 @@ function App.new(saved, clock)
   app.session = ns.Session.new(clock, GetMoney and GetMoney() or 0)
   app.sellSearch = ns.SellSearch.new(function(item, listings)
     app.events:emit("sellSuggestion", item, app:suggest(item, listings), true)
+  end, function(itemID, listings)
+    app:recordLive(itemID, listings)
   end)
   app:refreshSkills()
 
@@ -197,6 +199,18 @@ function App:conversionRows()
     return v and ns.Fees.net(v, neutral) or nil
   end
   return ns.Conversions.evaluateAll(ns.Conversions.all(), buyPrice, sellValue)
+end
+
+--- A search (yours or Blizzard's) returned every current listing of one item:
+--- make it today's price snapshot and the item's listings for deal finding.
+function App:recordLive(itemID, listings)
+  local key = self:market()
+  local recorded = self.prices:recordItem(key, itemID, listings)
+  local result = self.scanner.lastResult
+  if result and result.marketKey == key then
+    result.listings[itemID] = recorded -- nil when nothing is listed any more
+  end
+  self.events:emit("pricesUpdated", itemID)
 end
 
 --- Profit or loss of every known recipe at current market prices.

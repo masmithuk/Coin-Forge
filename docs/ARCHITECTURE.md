@@ -66,7 +66,7 @@ tested without the game, and the parts that touch the game stay small.
 | `Nameplates` | Coin marker on `C_NamePlate` frames |
 | `Merchant` | Merchant stock; remembers vendor prices for crafting costs |
 | `Bags` | Sellable bag items (commodities grouped by item, gear by link) |
-| `SellSearch` | Live AH search for one item; marks your own listings |
+| `SellSearch` | Live AH search for one item (pages through all results, marks your own listings); records every complete search, including Blizzard's, into `PriceDB` |
 | `Poster` | `PostCommodity` / `PostItem` (buyout-only), deposit, throttle check |
 | `Tooltip` | `TooltipDataProcessor` post-calls (falls back to `OnTooltipSet*` hooks) |
 | `App` | Builds contexts for the finders and exposes one API to the UI |
@@ -89,6 +89,9 @@ tested without the game, and the parts that touch the game stay small.
 3. `scan:commit()` writes one snapshot per item per day and returns the live listings.
 4. `scanComplete` → `App:findOpportunities(result)` builds a context and runs every finder.
 5. `opportunitiesUpdated` → `AuctionPanel:Refresh()`. Nameplates also refresh, since item values changed.
+
+Any complete search result for one item (`PriceDB:recordItem`) replaces that item's snapshot for today and
+its entry in the current listings, then the finders re-run.
 
 Listings only live in memory. After a `/reload`, deals return with the next scan,
 but prices (and so tooltips, crafting and mob values) are saved.

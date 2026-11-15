@@ -70,34 +70,56 @@ function Scan:add(itemID, unitPrice, count)
   list[#list + 1] = { price = unitPrice, count = count }
 end
 
+-- Stores today's snapshot of one item from its listings (sorted in place,
+-- cheapest first), replacing an earlier snapshot from the same day.
+local function storeSnapshot(self, m, itemID, list)
+  table.sort(list, function(a, b) return a.price < b.price end)
+  local qty = 0
+  for _, l in ipairs(list) do qty = qty + l.count end
+  local day = today(self)
+  local snap = {
+    day = day,
+    low = list[1].price,
+    value = ns.Stats.weightedPercentile(list, PriceDB.VALUE_PERCENTILE),
+    qty = qty,
+  }
+  local item = m.items[itemID] or { snaps = {} }
+  m.items[itemID] = item
+  local last = item.snaps[#item.snaps]
+  if last and last.day == day then
+    item.snaps[#item.snaps] = snap
+  else
+    item.snaps[#item.snaps + 1] = snap
+  end
+end
+
 --- Writes daily snapshots and returns { listings = {[itemID] = sorted list}, itemCount = n }.
 function Scan:commit()
   local owner = self.owner
   local m = owner:market(self.marketKey, true)
-  local day = today(owner)
   local itemCount = 0
   for itemID, list in pairs(self.listings) do
-    table.sort(list, function(a, b) return a.price < b.price end)
-    local qty = 0
-    for _, l in ipairs(list) do qty = qty + l.count end
-    local snap = {
-      day = day,
-      low = list[1].price,
-      value = ns.Stats.weightedPercentile(list, PriceDB.VALUE_PERCENTILE),
-      qty = qty,
-    }
-    local item = m.items[itemID] or { snaps = {} }
-    m.items[itemID] = item
-    local last = item.snaps[#item.snaps]
-    if last and last.day == day then
-      item.snaps[#item.snaps] = snap
-    else
-      item.snaps[#item.snaps + 1] = snap
-    end
+    storeSnapshot(owner, m, itemID, list)
     itemCount = itemCount + 1
   end
   m.lastScan = owner.clock()
   return { listings = self.listings, itemCount = itemCount, marketKey = self.marketKey }
+end
+
+--- Records a live search for one item (all its current listings) as today's
+--- snapshot. Doesn't count as a full scan. Empty results are ignored: "none
+--- listed right now" says nothing about the item's price.
+--- @param listings { {price (per unit), count} }
+function PriceDB:recordItem(marketKey, itemID, listings)
+  local list = {}
+  for _, l in ipairs(listings) do
+    if l.price and l.price > 0 and l.count and l.count > 0 then
+      list[#list + 1] = { price = l.price, count = l.count }
+    end
+  end
+  if #list == 0 then return nil end
+  storeSnapshot(self, self:market(marketKey, true), itemID, list)
+  return list
 end
 
 -- Queries -------------------------------------------------------------------

@@ -249,6 +249,13 @@ describe("UI smoke test", function()
     assert.equal(1, #posted)
     assert.same({ { bag = 0, slot = 1 }, ns.app.settings.sellDuration, 20, 105 }, posted[1])
     fire("BAG_UPDATE_DELAYED")
+
+    -- a search typed into Blizzard's Buy tab updates that item's price data too
+    assert.is_nil(ns.app.prices:getInfo("Forever|Horde", 2589))
+    fire("COMMODITY_SEARCH_RESULTS_UPDATED", 2589)
+    local info = ns.app.prices:getInfo("Forever|Horde", 2589)
+    assert.equal(5, info.low)
+    assert.equal(51, info.qty)
     _G.ItemLocation, _G.C_Container, _G.C_Item = nil, nil, nil
   end)
 
