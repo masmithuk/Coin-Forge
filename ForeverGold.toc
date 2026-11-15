@@ -1,0 +1,56 @@
+## Interface: 16001
+## Title: ForeverGold
+## Notes: Gold-making companion: AH scanning, profitable mobs, vendor flips, disenchant / craft / arbitrage opportunities.
+## Author: masmithuk
+## Version: 0.1.0
+## SavedVariables: ForeverGoldDB
+## IconTexture: Interface\Icons\INV_Misc_Coin_01
+## AddonCompartmentFunc: ForeverGold_OnCompartmentClick
+## AddonCompartmentFuncOnEnter: ForeverGold_OnCompartmentEnter
+## AddonCompartmentFuncOnLeave: ForeverGold_OnCompartmentLeave
+
+# Core: pure Lua, no WoW API. Loaded by the test suite in this order.
+src/Core/Namespace.lua
+src/Core/Events.lua
+src/Core/Money.lua
+src/Core/Stats.lua
+src/Core/Settings.lua
+src/Core/Fees.lua
+src/Core/GUID.lua
+src/Core/PriceDB.lua
+src/Data/Disenchant.lua
+src/Data/Conversions.lua
+src/Core/Disenchant.lua
+src/Core/Conversions.lua
+src/Core/Crafting.lua
+src/Core/Appraisal.lua
+src/Core/LootDB.lua
+src/Core/Opportunities.lua
+src/Core/VendorAnalysis.lua
+src/Core/Session.lua
+src/Core/Commands.lua
+src/Core/PanelModel.lua
+src/Core/HomeModel.lua
+src/Core/Layout.lua
+
+# WoW adapters: translate WoW API calls into plain tables for Core.
+src/WoW/Api.lua
+src/WoW/ItemInfo.lua
+src/WoW/Market.lua
+src/WoW/Scanner.lua
+src/WoW/Professions.lua
+src/WoW/TradeSkillRecorder.lua
+src/WoW/LootRecorder.lua
+src/WoW/Nameplates.lua
+src/WoW/Merchant.lua
+src/WoW/Tooltip.lua
+src/WoW/App.lua
+
+# UI
+src/UI/Widgets.lua
+src/UI/AuctionPanel.lua
+src/UI/MerchantOverlay.lua
+src/UI/HomeScreen.lua
+src/UI/MinimapButton.lua
+
+Main.lua

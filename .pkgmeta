@@ -1,0 +1,9 @@
+package-as: ForeverGold
+
+ignore:
+  - spec
+  - docs
+  - .github
+  - .busted
+  - .luacheckrc
+  - CONTRIBUTING.md
