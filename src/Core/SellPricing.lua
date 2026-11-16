@@ -15,6 +15,8 @@
 --      price war).
 --   5. If what you'd get after the AH cut is no better than a vendor pays,
 --      recommend vendoring instead.
+--   6. If you can disenchant it and the materials are worth more than both,
+--      recommend disenchanting (the posting price is still filled in).
 local _, ns = ...
 
 local SellPricing = {}
@@ -32,8 +34,9 @@ end
 ---   historyDays  days of price history behind `value`
 ---   vendorSell   what a vendor pays per unit (0 if it can't be vendored)
 ---   cutRate      AH cut (0.05 / 0.15)
+---   disenchantValue  net value of disenchanting one, or nil if you can't
 ---   settings     { undercut, sellFloor, baitShare, minHistoryDays } }
---- @return { action = "post"|"vendor"|"manual", price, net, reason,
+--- @return { action = "post"|"vendor"|"disenchant"|"manual", price, net, reason,
 ---           competitor, reference, ignored = { qty, count } }
 function SellPricing.suggest(input)
   local s = input.settings
@@ -42,8 +45,9 @@ function SellPricing.suggest(input)
   local reference = trusted and input.value or ns.Stats.weightedPercentile(listings, 0.5) or input.value
 
   if not reference then
-    return { action = "manual", reason = "No price data yet. Scan the AH or set a price yourself.",
+    local result = { action = "manual", reason = "No price data yet. Scan the AH or set a price yourself.",
       ignored = { qty = 0, count = 0 }, listings = {} }
+    return SellPricing.compareDisenchant(result, input)
   end
 
   local floor = reference * s.sellFloor
@@ -111,6 +115,24 @@ function SellPricing.suggest(input)
     result.action = "vendor"
     result.reason = ("A vendor pays %s, more than the %s you'd get here after the cut. Sell it to a vendor.")
       :format(ns.Money.short(input.vendorSell), ns.Money.short(net))
+  end
+  return SellPricing.compareDisenchant(result, input)
+end
+
+--- Switches the advice to "disenchant" when the materials are worth more than
+--- both posting (after the cut) and vendoring.
+function SellPricing.compareDisenchant(result, input)
+  local de = input.disenchantValue
+  if not de or de <= 0 then return result end
+  local postNet = result.net or 0
+  local vendor = input.vendorSell or 0
+  if de > postNet and de > vendor then
+    result.action = "disenchant"
+    local alternatives = {}
+    if result.net then alternatives[#alternatives + 1] = "posting gets " .. ns.Money.short(postNet) end
+    if vendor > 0 then alternatives[#alternatives + 1] = "a vendor pays " .. ns.Money.short(vendor) end
+    result.reason = ("Disenchant it: the materials are worth about %s after the cut%s.")
+      :format(ns.Money.short(de), #alternatives > 0 and (", while " .. table.concat(alternatives, " and ")) or "")
   end
   return result
 end

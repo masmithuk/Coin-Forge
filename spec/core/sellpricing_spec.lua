@@ -12,6 +12,7 @@ describe("SellPricing", function()
       value = o.value,
       historyDays = o.historyDays or 5,
       vendorSell = o.vendorSell or 0,
+      disenchantValue = o.disenchantValue,
       cutRate = 0.05,
       settings = o.settings or settings,
     })
@@ -81,6 +82,32 @@ describe("SellPricing", function()
     local s = suggest({ value = 100, listings = { L(100, 5) }, vendorSell = 95 })
     assert.equal("vendor", s.action)
     assert.matches("vendor", s.reason)
+  end)
+
+  describe("disenchanting", function()
+    it("recommends disenchanting when it beats posting and vendoring", function()
+      local s = suggest({ value = 1000, listings = { L(1000, 5) }, vendorSell = 100, disenchantValue = 2000 })
+      assert.equal("disenchant", s.action)
+      assert.matches("[Dd]isenchant", s.reason)
+      assert.matches("20s", s.reason)  -- disenchant value
+      assert.matches("9s 49c", s.reason) -- what posting would get (999 * 0.95)
+      assert.equal(999, s.price) -- the posting price is still there if you'd rather post
+    end)
+
+    it("keeps posting when that pays more", function()
+      local s = suggest({ value = 1000, listings = { L(1000, 5) }, disenchantValue = 500 })
+      assert.equal("post", s.action)
+    end)
+
+    it("beats vendoring too", function()
+      local s = suggest({ value = 100, listings = { L(100, 5) }, vendorSell = 95, disenchantValue = 300 })
+      assert.equal("disenchant", s.action)
+    end)
+
+    it("works with no AH data at all", function()
+      local s = suggest({ value = nil, historyDays = 0, listings = {}, disenchantValue = 300 })
+      assert.equal("disenchant", s.action)
+    end)
   end)
 
   it("never prices below one copper", function()

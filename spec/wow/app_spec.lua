@@ -215,6 +215,43 @@ describe("App", function()
       assert.equal(1000, e.outcome[1].price)
     end)
 
+    it("prices materials at their latest AH price, so it matches what a search shows", function()
+      for day = 1, 3 do
+        now = (50 + day) * 86400
+        scan({ { itemID = 11137, count = 1, buyout = 1000 } })
+      end
+      app.skills = { Enchanting = 150 }
+      -- you search Vision Dust today and it's now 400c: the 14-day median is still 1000c
+      app.sellSearch.onListings(11137, { { price = 400, count = 20 } })
+      assert.equal(1000, app:value(11137))
+      local e = app:disenchantEstimate(GREEN_CHEST)
+      assert.equal(400, e.outcome[1].price)
+    end)
+
+    it("falls back to the market value when there's no recent price", function()
+      -- lowest listing 300c, but the market value (20th percentile) is 1000c
+      for day = 1, 2 do
+        now = (50 + day) * 86400
+        scan({ { itemID = 11137, count = 1, buyout = 300 }, { itemID = 11137, count = 9, buyout = 9000 } })
+      end
+      app.skills = { Enchanting = 150 }
+      assert.equal(300, app:disenchantEstimate(GREEN_CHEST).outcome[1].price) -- fresh: latest lowest
+      now = now + 10 * 86400
+      assert.equal(1000, app:disenchantEstimate(GREEN_CHEST).outcome[1].price) -- stale: market value
+    end)
+
+    it("recommends disenchanting in the Sell tab when it's worth more", function()
+      for day = 1, 2 do
+        now = (50 + day) * 86400
+        scan({ { itemID = 11137, count = 1, buyout = 100000 }, { itemID = GREEN_CHEST, count = 1, buyout = 500 } })
+      end
+      app.skills = { Enchanting = 150 }
+      local s = app:suggest({ itemID = GREEN_CHEST, key = "x", postable = 1 })
+      assert.equal("disenchant", s.action)
+      app.skills = {}
+      assert.equal("post", app:suggest({ itemID = GREEN_CHEST, key = "x", postable = 1 }).action)
+    end)
+
     it("says what skill is needed when it's too low", function()
       app.skills = { Enchanting = 10 }
       local e = app:disenchantEstimate(GREEN_CHEST)

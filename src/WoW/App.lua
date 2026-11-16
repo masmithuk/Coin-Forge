@@ -56,6 +56,16 @@ function App:value(itemID, marketKey)
   return self.prices:getValue(marketKey or self:market(), itemID)
 end
 
+--- The latest lowest AH price (from the last scan or a search today or
+--- yesterday), which is what you'd see searching the item now. Falls back to
+--- the market value when there's no recent price.
+App.RECENT_DAYS = 1
+function App:currentPrice(itemID, marketKey)
+  local info = self.prices:getInfo(marketKey or self:market(), itemID)
+  if info and info.ageDays <= App.RECENT_DAYS then return info.low end
+  return info and info.value or nil
+end
+
 function App:history(itemID, marketKey)
   local info = self.prices:getInfo(marketKey or self:market(), itemID)
   return info and info.days or 0
@@ -120,7 +130,8 @@ function App:disenchantEstimate(itemID)
   local item = ns.ItemInfo.get(itemID)
   if not item or not ns.Disenchant.isDisenchantable(item) then return nil end
   local key, neutral = self:market()
-  local valueOf = function(id) return self:value(id, key) end
+  -- materials at today's prices, so it matches what a search shows
+  local valueOf = function(id) return self:currentPrice(id, key) end
   local ev, complete = ns.Disenchant.expectedValue(item, valueOf)
   local outcome = {}
   for i, o in ipairs(ns.Disenchant.outcome(item)) do
@@ -263,17 +274,19 @@ function App:suggest(item, listings)
     end
   end
   local info = ns.ItemInfo.get(item.itemID)
+  local de = self:disenchantEstimate(item.itemID)
   return ns.SellPricing.suggest({
     listings = listings,
     value = self:value(item.itemID, key),
     historyDays = self:history(item.itemID, key),
     vendorSell = info and info.sellPrice or 0,
+    disenchantValue = de and de.canDo and de.value > 0 and de.value or nil,
     cutRate = ns.Fees.cutRate(neutral),
     settings = self.settings,
   })
 end
 
-local ACTION_ORDER = { post = 1, vendor = 2, manual = 3 }
+local ACTION_ORDER = { post = 1, disenchant = 2, vendor = 3, manual = 4 }
 
 --- Everything in your bags that can go on the AH, with a suggested price,
 --- most valuable first.

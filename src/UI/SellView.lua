@@ -46,6 +46,7 @@ local PRICE_COLUMNS = {
 local ADVICE = {
   post = { "Post", C.good },
   vendor = { "Vendor it", C.gold },
+  disenchant = { "Disenchant", { 0.75, 0.55, 1 } },
   manual = { "Set a price", C.muted },
 }
 

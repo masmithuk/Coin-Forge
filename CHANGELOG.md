@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.4 (2026-11-16)
+
+- Disenchant estimates price materials at their latest AH price (last scan or search, up to a day old), so
+  they match what a search shows. Older data falls back to the 14-day market value.
+- Sell tab: characters who can disenchant an item are told to **Disenchant** it when the materials are worth
+  more than posting or vendoring, with the numbers.
+
 ## 0.3.3 (2026-11-16)
 
 - Fixed: professions were never detected on WoW Forever, which replaced the old skill functions with
