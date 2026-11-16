@@ -12,7 +12,7 @@ name; the slash command is now `/cforge`.*
 ## What it does
 
 | Where | What you see |
-|---|---|
+| --- | --- |
 | **Auction house** | A Coin Forge panel docked beside the AH with one **Scan** button and a list of deals, best first: flips, vendor snipes, disenchanting, essence conversions, crafts, "make it yourself" and other-AH arbitrage. Click a row and it's searched in the Blizzard Buy tab next to it. |
 | **Crafting** | Profit or loss of every recipe your characters have learned, at today's prices. Tick **Show unlearned** to also see recipes nobody has learned yet (usually ones above your skill) and whether they'd be worth learning. |
 | **Selling** | A Sell tab listing everything in your bags you can auction, most valuable first. Click one: price, quantity and duration are set up for you (all editable), then one click on **Post**. |
@@ -71,7 +71,7 @@ The minimap coin's tooltip and the home screen explain all of this in game as we
 ## Deal types
 
 | Tab | Meaning | Who can do it |
-|---|---|---|
+| --- | --- | --- |
 | Flip | Listed at least 30% under market value. Buy it and relist. | Everyone |
 | Vendor | Listed below what any vendor pays for it. Buy it on the AH, sell it to any vendor. | Everyone |
 | From vendor | A vendor you've visited sells it for less than the AH pays. Shows the vendor's name and zone. | Everyone |
@@ -103,7 +103,7 @@ Open the **Sell** tab on the Coin Forge panel at any auction house.
 ### How the price is chosen (and the traps it avoids)
 
 | Situation | What Coin Forge does |
-|---|---|
+| --- | --- |
 | Your own auction is the cheapest | Matches it, never undercutting yourself |
 | A few listings far under the normal price (**bait**) | Ignores them. They're there to make you undercut and crash the price |
 | A big wall of cheap listings, and the item has price history (**price war**) | Won't follow it down. Sits just under the cheapest sensible listing, or at the floor |
@@ -118,7 +118,7 @@ of the units listed. Gear is posted buyout-only, so nobody can win it with a low
 ## Commands
 
 | Command | Does |
-|---|---|
+| --- | --- |
 | `/cforge` | Open or close the home screen |
 | `/cforge mobs` | List the 10 best mobs you've farmed |
 | `/cforge reset` | Start a new farming session |
@@ -130,7 +130,7 @@ of the units listed. Gear is posted buyout-only, so nobody can win it with a low
 ### Settings
 
 | Name | Default | Meaning |
-|---|---|---|
+| --- | --- | --- |
 | `minProfit` | 50s | Minimum total profit for a deal to be listed |
 | `flipDiscount` | 30% | How far under market value a listing must be to count as a flip |
 | `minHistoryDays` | 2 | Days of price history needed before a value is trusted |
