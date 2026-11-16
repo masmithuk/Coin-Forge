@@ -99,8 +99,9 @@ function App:canDisenchant(item)
   return (self.skills.Enchanting or 0) >= ns.Disenchant.requiredSkill(item)
 end
 
-function App:recipes()
-  return ns.TradeSkillRecorder.recipesFor(self.db, self.charKey)
+--- Recipes learned by your characters (pass { includeUnlearned = true } for all).
+function App:recipes(opts)
+  return ns.TradeSkillRecorder.recipesFor(self.db, self.charKey, opts)
 end
 
 function App:recordRecipes()
@@ -247,7 +248,8 @@ function App:recordLive(itemID, listings)
 end
 
 --- Profit or loss of every known recipe at current market prices.
-function App:craftRows()
+--- @param opts passed to App:recipes (e.g. { includeUnlearned = true })
+function App:craftRows(opts)
   local key, neutral = self:market()
   local ctx = {
     buyPrice = function(id) return self:value(id, key) end,
@@ -257,7 +259,7 @@ function App:craftRows()
       return v and ns.Fees.net(v, neutral) or nil
     end,
   }
-  return ns.Crafting.evaluateAll(self:recipes(), ctx)
+  return ns.Crafting.evaluateAll(self:recipes(opts), ctx)
 end
 
 -- Selling ---------------------------------------------------------------------

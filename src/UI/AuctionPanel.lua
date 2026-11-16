@@ -124,6 +124,28 @@ function AuctionPanel:Build(anchor)
   self.canDoLabel = W.text(f, "GameFontHighlightSmall")
   self.canDoLabel:SetPoint("LEFT", self.canDo, "RIGHT", 2, 0)
   self.canDoLabel:SetText("Only what I can do")
+  self.showUnlearned = self.store.showUnlearned == true
+  self.unlearned = CreateFrame("CheckButton", nil, f, "UICheckButtonTemplate")
+  self.unlearned:SetSize(20, 20)
+  self.unlearned:SetPoint("RIGHT", self.canDo, "LEFT", -96, 0)
+  self.unlearned:SetChecked(self.showUnlearned)
+  self.unlearnedLabel = W.text(f, "GameFontHighlightSmall")
+  self.unlearnedLabel:SetPoint("LEFT", self.unlearned, "RIGHT", 2, 0)
+  self.unlearnedLabel:SetText("Show unlearned")
+  self.unlearned:SetScript("OnEnter", function(b)
+    GameTooltip:SetOwner(b, "ANCHOR_BOTTOM")
+    GameTooltip:SetText("Show unlearned recipes", 1, 1, 1)
+    GameTooltip:AddLine("Also list recipes none of your characters have learned yet, usually ones above "
+      .. "your skill, with their profit, so you can see what's worth learning.", 0.8, 0.8, 0.8, true)
+    GameTooltip:Show()
+  end)
+  self.unlearned:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  self.unlearned:SetScript("OnClick", function(b)
+    self.showUnlearned = b:GetChecked() and true or false
+    self.store.showUnlearned = self.showUnlearned
+    self:Refresh()
+  end)
+
   self.canDo:SetScript("OnEnter", function(b)
     GameTooltip:SetOwner(b, "ANCHOR_BOTTOM")
     GameTooltip:SetText("Only what I can do", 1, 1, 1)
@@ -156,8 +178,9 @@ function AuctionPanel:Build(anchor)
     columns = CRAFT_COLUMNS,
     cells = function(r) return self:CraftCells(r) end,
     color = function(r)
-      if r.profit then return { profit = r.profit >= 0 and C.good or C.bad } end
-      return { profit = C.muted }
+      local c = { profit = r.profit and (r.profit >= 0 and C.good or C.bad) or C.muted }
+      if r.recipe.learnedBySomeone == false then c.name, c.crafter = C.muted, C.muted end
+      return c
     end,
     onClick = function(r) AuctionPanel.search(itemName(r.recipe.outputItemID) or r.recipe.name) end,
     onEnter = function(row, r) self:CraftTooltip(row, r) end,
@@ -324,6 +347,11 @@ function AuctionPanel:Refresh()
   local filterable = self.view == "deals" or self.view == "crafting"
   self.canDo:SetShown(filterable) -- everyone can convert and sell
   self.canDoLabel:SetShown(filterable)
+  local crafting = self.view == "crafting"
+  self.unlearned:SetShown(crafting)
+  self.unlearnedLabel:SetShown(crafting)
+  -- leave room on the filter row for whichever toggles are showing
+  self.filterTabs:SetPoint("RIGHT", self.frame, "RIGHT", crafting and -270 or (filterable and -150 or -8), 0)
 
   if self.view == "deals" then
     local all = PM.filter(self.app.lastOpportunities, { kind = "all", onlyCanDo = self.onlyCanDo })
@@ -383,7 +411,7 @@ function AuctionPanel:ConversionTooltip(row, r)
 end
 
 function AuctionPanel:RefreshCrafts()
-  local rows = self.app:craftRows()
+  local rows = self.app:craftRows({ includeUnlearned = self.showUnlearned })
   local professions, counts, filtered = {}, {}, {}
   for _, r in ipairs(rows) do
     if not self.onlyCanDo or r.recipe.knownByPlayer then
@@ -400,11 +428,15 @@ function AuctionPanel:RefreshCrafts()
   self.filterTabs:SetTabs(tabs, self.profession)
   self.crafts:SetItems(filtered)
 
-  local profitable, hidden = 0, 0
+  local profitable, hidden, notLearned = 0, 0, 0
   for _, r in ipairs(filtered) do if r.profit and r.profit > 0 then profitable = profitable + 1 end end
-  for _, r in ipairs(rows) do if not r.recipe.knownByPlayer then hidden = hidden + 1 end end
+  for _, r in ipairs(rows) do
+    if r.recipe.learnedBySomeone == false then notLearned = notLearned + 1
+    elseif not r.recipe.knownByPlayer then hidden = hidden + 1 end
+  end
   local text = #filtered > 0 and ("%d of %d recipes make a profit."):format(profitable, #filtered) or ""
-  if hidden == 0 and #rows > 0 then
+  if notLearned > 0 then text = text .. (" %d not learned yet."):format(notLearned) end
+  if hidden == 0 and notLearned == 0 and #rows > 0 then
     text = text .. " (this character knows all of them)"
   elseif hidden > 0 and self.onlyCanDo then
     text = text .. (" %d known only by your other characters are hidden."):format(hidden)
@@ -414,7 +446,9 @@ end
 
 function AuctionPanel:CraftCells(r)
   local recipe = r.recipe
-  local crafter = recipe.knownByPlayer and "You" or table.concat(recipe.crafters or {}, ", ")
+  local crafter = recipe.knownByPlayer and "You"
+    or (recipe.learnedBySomeone == false and "Not learned")
+    or table.concat(recipe.crafters or {}, ", ")
   return {
     name = recipe.name,
     cost = r.cost and Money.short(r.cost) or "?",
@@ -453,6 +487,9 @@ function AuctionPanel:CraftTooltip(row, r)
   end
   if #r.missing > 0 then
     GameTooltip:AddLine("Scan the AH or visit a vendor that sells the missing reagents.", 0.8, 0.8, 0.8, true)
+  end
+  if r.recipe.learnedBySomeone == false then
+    GameTooltip:AddLine("None of your characters have learned this yet.", 1, 0.65, 0.2, true)
   end
   GameTooltip:Show()
 end

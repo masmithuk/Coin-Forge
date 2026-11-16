@@ -226,6 +226,66 @@ describe("WoW adapters", function()
       assert.equal("Alchemy", r.profession)
     end)
 
+    describe("learned recipes (WoW Forever lists unlearned ones too)", function()
+      local learned
+      before_each(function()
+        learned = { [77] = true, [78] = false }
+        wow.install({
+          C_TradeSkillUI = {
+            GetAllRecipeIDs = function() return { 77, 78 } end,
+            GetBaseProfessionInfo = function() return { professionName = "First Aid" } end,
+            GetRecipeInfo = function(id) return { recipeID = id, learned = learned[id] } end,
+            GetRecipeSchematic = function(id)
+              return { name = "Recipe " .. id, outputItemID = 1000 + id, quantityMin = 1, quantityMax = 1,
+                reagentSlotSchematics = { { quantityRequired = 1, reagents = { { itemID = 2589 } } } } }
+            end,
+          },
+        })
+        ns = addon.loadWith(ADAPTERS)
+      end)
+
+      it("only marks recipes you've learned as known", function()
+        local db = {}
+        ns.TradeSkillRecorder.record(db, "Dorf-Shammy")
+        local list = ns.TradeSkillRecorder.recipesFor(db, "Dorf-Shammy")
+        assert.equal(1, #list)
+        assert.equal("Recipe 77", list[1].name)
+        assert.is_true(list[1].knownByPlayer)
+      end)
+
+      it("can include recipes nobody has learned, marked as such", function()
+        local db = {}
+        ns.TradeSkillRecorder.record(db, "Dorf-Shammy")
+        local list = ns.TradeSkillRecorder.recipesFor(db, "Dorf-Shammy", { includeUnlearned = true })
+        assert.equal(2, #list)
+        assert.is_false(list[2].knownByPlayer)
+        assert.is_false(list[2].learnedBySomeone)
+        assert.is_true(list[1].learnedBySomeone)
+      end)
+
+      it("corrects recipes that were wrongly recorded as known", function()
+        local db = { recipes = { ["First Aid:1078"] = { key = "First Aid:1078", name = "Recipe 78",
+          profession = "First Aid", outputItemID = 1078, outputQty = 1, reagents = {},
+          crafters = { ["Dorf-Shammy"] = true } } } }
+        ns.TradeSkillRecorder.record(db, "Dorf-Shammy")
+        assert.is_nil(db.recipes["First Aid:1078"].crafters["Dorf-Shammy"])
+        assert.equal(1, #ns.TradeSkillRecorder.recipesFor(db, "Dorf-Shammy"))
+      end)
+
+      it("keeps other characters who did learn it", function()
+        local db = { recipes = { ["First Aid:1078"] = { key = "First Aid:1078", name = "Recipe 78",
+          profession = "First Aid", outputItemID = 1078, outputQty = 1, reagents = {},
+          crafters = { ["Alt-Shammy"] = true } } } }
+        ns.TradeSkillRecorder.record(db, "Dorf-Shammy")
+        local r = ns.TradeSkillRecorder.recipesFor(db, "Dorf-Shammy")
+        assert.equal(2, #r)
+        local alt
+        for _, x in ipairs(r) do if x.name == "Recipe 78" then alt = x end end
+        assert.same({ "Alt-Shammy" }, alt.crafters)
+        assert.is_false(alt.knownByPlayer)
+      end)
+    end)
+
     it("skips recipes whose links are not loaded yet", function()
       wow.install({
         GetTradeSkillLine = function() return "Tailoring", 1, 75 end,

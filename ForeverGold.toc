@@ -2,7 +2,7 @@
 ## Title: ForeverGold
 ## Notes: Gold-making companion: AH scanning, profitable mobs, vendor flips, disenchant / craft / arbitrage opportunities.
 ## Author: masmithuk
-## Version: 0.3.4
+## Version: 0.3.5
 ## SavedVariables: ForeverGoldDB
 ## IconTexture: Interface\Icons\INV_Misc_Coin_01
 ## AddonCompartmentFunc: ForeverGold_OnCompartmentClick

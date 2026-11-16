@@ -153,6 +153,29 @@ describe("UI smoke test", function()
       reagents = { { itemID = 4306, qty = 4 } }, crafters = { Alt = true },
     }
     assert.is_true(clickTab("crafting"))
+    -- a recipe none of your characters has learned only shows with "Show unlearned" ticked
+    ns.app.db.recipes["First Aid:6450"] = {
+      key = "First Aid:6450", name = "Heavy Silk Bandage", profession = "First Aid", outputItemID = 6450,
+      outputQty = 1, reagents = { { itemID = 4306, qty = 2 } }, crafters = {},
+    }
+    local function craftList()
+      for _, f in ipairs(env.__created) do
+        if f.header and f.items and f.items[1] and f.items[1].recipe then return f end
+      end
+    end
+    clickTab("crafting")
+    assert.equal(1, #craftList().items)
+    local unlearnedBox
+    for _, f in ipairs(env.__created) do
+      if f.checked ~= nil and f.scripts.OnClick and f.scripts.OnEnter then
+        f:Fire("OnEnter")
+        if _G.GameTooltip.text == "Show unlearned recipes" then unlearnedBox = f end
+      end
+    end
+    assert.is_not_nil(unlearnedBox, "expected the Show unlearned checkbox")
+    unlearnedBox.checked = true
+    unlearnedBox:Fire("OnClick")
+    assert.equal(2, #craftList().items)
     assert.is_true(clickTab("conversions"))
     assert.is_true(clickTab("split"))
     local convList

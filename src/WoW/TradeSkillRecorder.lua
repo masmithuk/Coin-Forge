@@ -3,6 +3,9 @@
 -- Storage (account-wide, so alts' recipes count too):
 --   db.recipes[key] = { key, name, profession, outputItemID, outputQty,
 --                       reagents = {{itemID, qty}}, crafters = { [charKey] = true } }
+-- `crafters` lists only characters who have *learned* the recipe. WoW Forever's
+-- recipe list also includes recipes you haven't learned; those are stored with
+-- no crafter so they can be shown as "not learned".
 --
 -- Supports the classic trade skill API and, as a fallback, C_TradeSkillUI.
 -- Collapsed categories hide their recipes in the classic window, so the
@@ -16,9 +19,12 @@ local function store(db, charKey, recipe)
   db.recipes = db.recipes or {}
   local key = recipe.profession .. ":" .. recipe.outputItemID
   local existing = db.recipes[key]
+  local learned = recipe.learned ~= false
+  recipe.learned = nil
   recipe.key = key
   recipe.crafters = existing and existing.crafters or {}
-  recipe.crafters[charKey] = true
+  -- also corrects recipes an older version wrongly recorded as learned
+  recipe.crafters[charKey] = learned or nil
   db.recipes[key] = recipe
 end
 
@@ -56,6 +62,7 @@ local function readModern()
   if not profession then return {} end
   local recipes = {}
   for _, recipeID in ipairs(api.GetAllRecipeIDs() or {}) do
+    local info = api.GetRecipeInfo and api.GetRecipeInfo(recipeID)
     local s = api.GetRecipeSchematic(recipeID, false)
     if s and s.outputItemID then
       local reagents = {}
@@ -68,6 +75,7 @@ local function readModern()
       recipes[#recipes + 1] = {
         name = s.name, profession = profession, outputItemID = s.outputItemID,
         outputQty = ((s.quantityMin or 1) + (s.quantityMax or s.quantityMin or 1)) / 2, reagents = reagents,
+        learned = not info or info.learned ~= false,
       }
     end
   end
@@ -88,18 +96,24 @@ function TradeSkillRecorder.record(db, charKey)
   return #recipes
 end
 
---- All recorded recipes, with crafter names and whether `charKey` knows them.
-function TradeSkillRecorder.recipesFor(db, charKey)
+--- Recorded recipes learned by at least one of your characters, with crafter
+--- names and whether `charKey` knows them.
+--- @param opts { includeUnlearned = true } to also list recipes nobody has learned
+function TradeSkillRecorder.recipesFor(db, charKey, opts)
+  local includeUnlearned = opts and opts.includeUnlearned
   local list = {}
   for _, r in pairs(db.recipes or {}) do
     local crafters = {}
     for name in pairs(r.crafters or {}) do crafters[#crafters + 1] = name end
     table.sort(crafters)
-    list[#list + 1] = {
-      key = r.key, name = r.name, profession = r.profession, outputItemID = r.outputItemID,
-      outputQty = r.outputQty, reagents = r.reagents, crafters = crafters,
-      knownByPlayer = r.crafters and r.crafters[charKey] == true or false,
-    }
+    if #crafters > 0 or includeUnlearned then
+      list[#list + 1] = {
+        key = r.key, name = r.name, profession = r.profession, outputItemID = r.outputItemID,
+        outputQty = r.outputQty, reagents = r.reagents, crafters = crafters,
+        knownByPlayer = r.crafters and r.crafters[charKey] == true or false,
+        learnedBySomeone = #crafters > 0,
+      }
+    end
   end
   table.sort(list, function(a, b) return (a.name or "") < (b.name or "") end)
   return list

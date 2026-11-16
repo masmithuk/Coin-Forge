@@ -11,7 +11,7 @@ wherever you are: at the auctioneer, at vendors and out in the world.
 | Where | What you see |
 |---|---|
 | **Auction house** | A ForeverGold panel docked beside the AH with one **Scan** button and a list of deals, best first: flips, vendor snipes, disenchanting, essence conversions, crafts, "make it yourself" and other-AH arbitrage. Click a row and it's searched in the Blizzard Buy tab next to it. |
-| **Crafting** | Profit or loss of every recipe your characters know, at today's prices. |
+| **Crafting** | Profit or loss of every recipe your characters have learned, at today's prices. Tick **Show unlearned** to also see recipes nobody has learned yet (usually ones above your skill) and whether they'd be worth learning. |
 | **Selling** | A Sell tab listing everything in your bags you can auction, most valuable first. Click one: price, quantity and duration are set up for you (all editable), then one click on **Post**. |
 | **Conversions** | Every essence combine (3 lesser → 1 greater) and split (1 greater → 3 lesser), with live profit or loss. No profession needed. |
 | **Out in the world** | A coin and value over nameplates of mobs worth farming, plus "loot per kill" and best drops in the mob's tooltip. |

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.5 (2026-11-16)
+
+- Fixed: every recipe in a profession was recorded as known, including unlearned ones (WoW Forever's recipe
+  list includes them), so crafting showed recipes far above your skill. Only learned recipes count now.
+  Re-open each profession window once to correct recipes recorded by older versions.
+- New **Show unlearned** checkbox on the Crafting view lists recipes none of your characters have learned,
+  with their profit, so you can see what's worth learning. Off by default.
+- Craft deals only use recipes one of your characters has learned.
+
 ## 0.3.4 (2026-11-16)
 
 - Disenchant estimates price materials at their latest AH price (last scan or search, up to a day old), so
