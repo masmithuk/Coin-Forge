@@ -79,6 +79,33 @@ describe("PanelModel", function()
     end)
   end)
 
+  describe("emptyText", function()
+    local base = { running = false, hasResult = false, cooldown = 0, onlyCanDo = false, minHistoryDays = 2 }
+    local function with(o)
+      local s = {}
+      for k, v in pairs(base) do s[k] = v end
+      for k, v in pairs(o) do s[k] = v end
+      return s
+    end
+
+    it("asks you to scan when you can", function()
+      assert.matches("Press Scan", PM.emptyText(with({})))
+    end)
+
+    it("explains the wait instead of asking you to scan when the cooldown is running", function()
+      local text = PM.emptyText(with({ cooldown = 754 }))
+      assert.not_matches("Press Scan", text)
+      assert.matches("12:34", text)
+      assert.matches("15 minutes", text)
+    end)
+
+    it("explains an empty scan and the can-do filter", function()
+      assert.matches("history", PM.emptyText(with({ hasResult = true })))
+      assert.matches("Only what I can do", PM.emptyText(with({ hasResult = true, onlyCanDo = true })))
+      assert.matches("Scanning", PM.emptyText(with({ running = true })))
+    end)
+  end)
+
   it("summarises counts per kind and total profit", function()
     local s = PM.summary(opps)
     assert.equal(3, s.count)

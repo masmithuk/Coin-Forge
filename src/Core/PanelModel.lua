@@ -84,6 +84,25 @@ function PanelModel.footer(opps, filter)
   return text .. (" %d need a profession or skill you don't have."):format(hidden)
 end
 
+--- What the deals list says when it's empty: always why, and what to do next.
+--- @param state { running, hasResult (a scan for this AH exists), cooldown (seconds),
+---   onlyCanDo, minHistoryDays }
+function PanelModel.emptyText(state)
+  if state.running then return "Scanning..." end
+  if not state.hasResult then
+    if state.cooldown > 0 then
+      return ("No scan of this auction house yet. The server allows one full scan every 15 minutes, "
+        .. "so Scan unlocks in %d:%02d.\n\nMeanwhile, searching an item in the Buy tab still updates its prices.")
+        :format(math.floor(state.cooldown / 60), state.cooldown % 60)
+    end
+    return "Press Scan to find deals on this auction house.\n\n"
+      .. "Your saved prices already power tooltips, crafting and mob values."
+  end
+  if state.onlyCanDo then return "Nothing you can do right now. Untick \"Only what I can do\" to see everything." end
+  return "No deals in this scan.\n\nMost deals need " .. state.minHistoryDays
+    .. " days of price history, so they show up once you've scanned on a few different days."
+end
+
 --- Tabs to show: "All" plus only the kinds that have results, so the
 --- panel never shows empty tabs.
 function PanelModel.tabs(opps)

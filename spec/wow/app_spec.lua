@@ -267,6 +267,38 @@ describe("App", function()
     end)
   end)
 
+  describe("after a /reload", function()
+    it("restores the last scan's listings, so deals come back without a new scan", function()
+      for day = 1, 3 do
+        now = (50 + day) * 86400
+        scan({ { itemID = 4306, count = 20, buyout = 20 * 1000 } })
+      end
+      scan({ { itemID = 4306, count = 10, buyout = 10 * 200 }, { itemID = 4306, count = 20, buyout = 20 * 1000 } })
+      assert.is_true(#app.lastOpportunities > 0)
+
+      -- simulate /reload: a fresh App over the same saved data
+      local reloaded = ns.App.new(saved, function() return now end)
+      assert.is_table(reloaded.scanner.lastResult)
+      assert.equal(200, reloaded.scanner.lastResult.listings[4306][1].price)
+      assert.equal("flip", reloaded.lastOpportunities[1].kind)
+      -- and the scan cooldown is still respected
+      assert.is_true(reloaded.scanner:cooldownLeft() > 0)
+    end)
+
+    it("keeps live search updates too", function()
+      scan({ { itemID = 4306, count = 10, buyout = 10 * 100 } })
+      app.sellSearch.onListings(4306, { { price = 60, count = 2 } })
+      local reloaded = ns.App.new(saved, function() return now end)
+      assert.equal(60, reloaded.scanner.lastResult.listings[4306][1].price)
+    end)
+
+    it("doesn't restore listings older than a day", function()
+      scan({ { itemID = 4306, count = 10, buyout = 10 * 100 } })
+      now = now + 2 * 86400
+      assert.is_nil(ns.App.new(saved, function() return now end).scanner.lastResult)
+    end)
+  end)
+
   it("reports home screen state", function()
     local s = app:homeState()
     assert.is_false(s.scanned)

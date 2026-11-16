@@ -38,6 +38,7 @@ tested without the game, and the parts that touch the game stay small.
 | `Settings` | Defaults, typed setters for `/fg config` |
 | `Fees` | AH cut (5% faction, 15% neutral) |
 | `GUID` | NPC id from a creature GUID |
+| `ListingStore` | Compact saved copy of the last scan's listings, restored after `/reload` |
 | `PriceDB` | Daily price snapshots per market, market value, pruning |
 | `Disenchant` | Outcome, expected value and skill needed, from `Data/Disenchant` |
 | `Conversions` | Essence combine/split definitions and evaluation |
@@ -93,8 +94,8 @@ tested without the game, and the parts that touch the game stay small.
 Any complete search result for one item (`PriceDB:recordItem`) replaces that item's snapshot for today and
 its entry in the current listings, then the finders re-run.
 
-Listings only live in memory. After a `/reload`, deals return with the next scan,
-but prices (and so tooltips, crafting and mob values) are saved.
+The last scan's listings are also saved in compact form (`ListingStore`: each item's 20 cheapest price
+levels) and restored after a `/reload`, so deals don't wait for the next 15-minute scan window.
 
 ## Saved data (`ForeverGoldDB`, account-wide)
 
@@ -106,6 +107,7 @@ ForeverGoldDB = {
   recipes = { ["Tailoring:4305"] = { name, profession, outputItemID, outputQty, reagents, crafters = { ["Name-Realm"] = true } } },
   vendorPrices = { [itemID] = copperPerUnit },
   lastDeals = { top 5 deals from the last scan, for the home screen },
+  lastListings = { marketKey, time, items = { [itemID] = "price:count,..." } },
   scanner = { lastStart = t },
   ui = { home = {geometry}, auctionPanel = {geometry, onlyCanDo}, minimap = { angle }, welcomed = true },
 }

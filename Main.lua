@@ -174,7 +174,11 @@ on("ADDON_LOADED", function(name)
   start()
 end)
 
-on("AUCTION_HOUSE_SHOW", function() panel:Show(AuctionHouseFrame) end)
+on("AUCTION_HOUSE_SHOW", function()
+  -- recalculate restored deals with this character's current skills and recipes
+  if app.scanner.lastResult then app:findOpportunities() end
+  panel:Show(AuctionHouseFrame)
+end)
 on("AUCTION_HOUSE_CLOSED", function() panel:Hide() end)
 on("REPLICATE_ITEM_LIST_UPDATE", function() app.scanner:onEvent("REPLICATE_ITEM_LIST_UPDATE") end)
 

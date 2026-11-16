@@ -320,14 +320,13 @@ end
 function AuctionPanel:EmptyText()
   local app = self.app
   local result = app.scanner.lastResult
-  if app.scanner.running then return "Scanning..." end
-  if not result or result.marketKey ~= (app:market()) then
-    return "Press Scan to find deals on this auction house.\n\n"
-      .. "Your saved prices already power tooltips, crafting and mob values."
-  end
-  if self.onlyCanDo then return "Nothing you can do right now. Untick \"Only what I can do\" to see everything." end
-  return "No deals in this scan.\n\nMost deals need " .. app.settings.minHistoryDays
-    .. " days of price history, so they show up once you've scanned on a few different days."
+  return PM.emptyText({
+    running = app.scanner.running,
+    hasResult = result ~= nil and result.marketKey == (app:market()),
+    cooldown = app.scanner:cooldownLeft(),
+    onlyCanDo = self.onlyCanDo,
+    minHistoryDays = app.settings.minHistoryDays,
+  })
 end
 
 function AuctionPanel:Refresh()

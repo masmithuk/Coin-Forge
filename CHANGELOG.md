@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.6 (2026-11-16)
+
+- Fixed: after a `/reload`, Deals was empty (the listings only lived in memory) while Scan was locked by the
+  15-minute cooldown. The last scan's listings are now saved (each item's 20 cheapest price levels), so deals
+  come straight back. Listings older than a day aren't restored.
+- An empty Deals list no longer says "Press Scan" when Scan is locked: it shows when Scan unlocks and points
+  out that searching an item still updates its prices.
+
 ## 0.3.5 (2026-11-16)
 
 - Fixed: every recipe in a profession was recorded as known, including unlearned ones (WoW Forever's recipe

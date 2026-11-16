@@ -42,7 +42,19 @@ function App.new(saved, clock)
   app:refreshSkills()
 
   app.events:on("scanComplete", function(result) app:onScanComplete(result) end)
+  app:restoreListings()
   return app
+end
+
+App.LISTINGS_MAX_AGE = 86400
+
+--- After a /reload: bring back the last scan's listings (if under a day old)
+--- and the deals found in them, so you don't have to wait out the scan cooldown.
+function App:restoreListings()
+  local result = ns.ListingStore.load(self.db.lastListings)
+  if not result or not result.time or self.clock() - result.time > App.LISTINGS_MAX_AGE then return end
+  self.scanner.lastResult = result
+  self:findOpportunities(result)
 end
 
 -- Markets --------------------------------------------------------------------
@@ -203,6 +215,7 @@ end
 
 function App:onScanComplete(result)
   self.prices:prune(self.settings.historyDays)
+  self.db.lastListings = ns.ListingStore.save(result, self.clock())
   -- Vendor and disenchant deals need item details the client loads lazily.
   -- Ask for them now; onItemInfoReceived re-runs the finders as they arrive.
   if C_Item and C_Item.RequestLoadItemDataByID then
@@ -243,6 +256,9 @@ function App:recordLive(itemID, listings)
   local result = self.scanner.lastResult
   if result and result.marketKey == key then
     result.listings[itemID] = recorded -- nil when nothing is listed any more
+    if self.db.lastListings and self.db.lastListings.marketKey == key then
+      ns.ListingStore.setItem(self.db.lastListings, itemID, recorded)
+    end
   end
   self.events:emit("pricesUpdated", itemID)
 end
