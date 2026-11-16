@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.0 (2026-11-16)
+
+First public release on CurseForge, for WoW Forever (1.60.1).
+
+- AH scanning with price history per auction house, kept fresh by your own searches.
+- Deals: flips, vendor snipes, From vendor, essence conversions, disenchanting, crafts and other-AH arbitrage.
+- Sell tab with trap-aware pricing (ignores bait and price wars, never undercuts you) and one-click posting.
+- Crafting profit and loss, a Conversions view, profitable-mob nameplates, vendor highlights, smart tooltips.
+- New `/fg recipes` command shows what the recipe recorder sees in an open profession window.
+
+Known issue: recipes recorded by earlier versions may still show as learned when they aren't. Opening the
+profession window corrects them in most cases. Please report `/fg recipes` output if it doesn't.
+
 ## 0.3.6 (2026-11-16)
 
 - Fixed: after a `/reload`, Deals was empty (the listings only lived in memory) while Scan was locked by the

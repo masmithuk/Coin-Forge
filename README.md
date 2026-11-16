@@ -23,6 +23,11 @@ ForeverGold never buys, posts or clicks for you. Every purchase goes through Bli
 
 ## Install
 
+**From CurseForge:** install ForeverGold with the CurseForge app (choose the WoW Forever flavor), or download the
+zip from the project page and extract it into your WoW Forever `Interface/AddOns` folder.
+
+**From source:**
+
 1. Download or clone this repository.
 2. Put the folder in the `Interface/AddOns/` folder of your **WoW Forever** game folder (inside your World of
    Warcraft install, next to the retail and classic ones). Make sure it is named **`ForeverGold`**, so the path
@@ -157,6 +162,7 @@ luacheck .    # lint
 
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): how the pieces fit together, how data is stored, and how to add a new kind of deal
 - [CONTRIBUTING.md](CONTRIBUTING.md): the test-first workflow and code conventions
+- [docs/RELEASING.md](docs/RELEASING.md): how to publish a new version to GitHub and CurseForge
 - [docs/superpowers/specs/2026-11-15-forevergold-design.md](docs/superpowers/specs/2026-11-15-forevergold-design.md): the original design
 
 ## Licence
