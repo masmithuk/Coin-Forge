@@ -12,8 +12,8 @@ A release is one tag push. GitHub Actions (`.github/workflows/release.yml`) then
 1. **Create the CurseForge project** at <https://authors.curseforge.com> (World of Warcraft > Addons), with
    category *Auction & Economy* and the description from [CURSEFORGE.md](CURSEFORGE.md). New projects are
    reviewed by CurseForge moderators before they go public.
-2. **Note the project id**, the number shown on the project's overview page.
-3. **Create an API token** at <https://authors.curseforge.com/account/api-tokens>.
+2. **Note the project id**, shown under "About This Project" on the project's overview page.
+3. **Create an API token** at <https://www.curseforge.com/account/api-tokens>.
 4. In the GitHub repo, open **Settings > Secrets and variables > Actions** and add:
    - secret **`CF_API_KEY`**: the API token
    - variable **`CF_PROJECT_ID`**: the project id
