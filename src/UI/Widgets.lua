@@ -130,7 +130,11 @@ function Widgets.tabBar(parent, onSelect)
     b.underline:SetPoint("BOTTOMLEFT", 4, 0)
     b.underline:SetPoint("BOTTOMRIGHT", -4, 0)
     b.underline:SetHeight(2)
-    b:SetScript("OnClick", function(self) onSelect(self.kind) end)
+    b:SetScript("OnClick", function(self)
+      -- show the new selection straight away; don't rely on the owner redrawing
+      bar:SetTabs(bar.tabs, self.kind)
+      onSelect(self.kind)
+    end)
     b:SetScript("OnEnter", function(self)
       if not self.help then return end
       GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")

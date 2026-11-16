@@ -242,12 +242,20 @@ describe("UI smoke test", function()
     local priceBox = find(function(f) return f.text == ns.Money.format(99) end)
     assert.is_not_nil(priceBox, "expected the price box to hold 99c")
 
+    -- pick 2 h: the tab must visibly become the selected one
+    local function durationTab(kind)
+      return find(function(f) return f.kind == kind and f.underline and f.scripts.OnClick end)
+    end
+    durationTab(1):Fire("OnClick")
+    assert.is_true(durationTab(1).underline.shown, "2 h should look selected")
+    assert.is_false(durationTab(2).underline.shown, "8 h should no longer look selected")
+
     -- edit the price, then post
     priceBox.text = "1s 5c"
     priceBox:Fire("OnTextChanged", true)
     find(function(f) return f.text == "Post" and f.scripts.OnClick end):Fire("OnClick")
     assert.equal(1, #posted)
-    assert.same({ { bag = 0, slot = 1 }, ns.app.settings.sellDuration, 20, 105 }, posted[1])
+    assert.same({ { bag = 0, slot = 1 }, 1, 20, 105 }, posted[1])
     fire("BAG_UPDATE_DELAYED")
 
     -- a search typed into Blizzard's Buy tab updates that item's price data too

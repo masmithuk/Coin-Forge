@@ -7,6 +7,8 @@
 - Item tooltips show a disenchant estimate for characters with Enchanting: expected value after the AH cut,
   the likely materials with their chances and prices, and the skill needed if yours is too low.
 - New `/fg skills` command shows the professions ForeverGold has detected.
+- Fixed: clicking 2 h / 8 h / 24 h didn't move the highlight, so 8 h always looked selected (the chosen
+  duration was used, it just wasn't shown). Every tab bar now highlights a click immediately.
 
 ## 0.3.2 (2026-11-15)
 
