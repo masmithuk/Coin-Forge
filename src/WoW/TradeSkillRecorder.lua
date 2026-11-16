@@ -96,6 +96,35 @@ function TradeSkillRecorder.record(db, charKey)
   return #recipes
 end
 
+--- What the open profession window looks like to the recorder (for /fg recipes):
+--- which API path is used and how many recipes the game says are learned.
+function TradeSkillRecorder.diagnose()
+  local d = {
+    hasClassic = (GetNumTradeSkills and GetTradeSkillLine) and true or false,
+    hasModern = ns.Api.has("C_TradeSkillUI.GetAllRecipeIDs"),
+    hasLearnedFlag = false, total = 0, learned = 0, unlearned = 0,
+  }
+  d.path = d.hasClassic and "classic" or (d.hasModern and "modern" or "none")
+  if d.hasClassic then
+    d.profession = GetTradeSkillLine()
+    d.total = GetNumTradeSkills() or 0
+  end
+  if d.hasModern then
+    local api = C_TradeSkillUI
+    local base = api.GetBaseProfessionInfo and api.GetBaseProfessionInfo()
+    d.profession = d.profession or (base and base.professionName)
+    local ids = api.GetAllRecipeIDs() or {}
+    d.modernTotal = #ids
+    if not d.hasClassic then d.total = #ids end
+    for _, id in ipairs(ids) do
+      local info = api.GetRecipeInfo and api.GetRecipeInfo(id)
+      if info and info.learned ~= nil then d.hasLearnedFlag = true end
+      if info and info.learned == false then d.unlearned = d.unlearned + 1 else d.learned = d.learned + 1 end
+    end
+  end
+  return d
+end
+
 --- Recorded recipes learned by at least one of your characters, with crafter
 --- names and whether `charKey` knows them.
 --- @param opts { includeUnlearned = true } to also list recipes nobody has learned

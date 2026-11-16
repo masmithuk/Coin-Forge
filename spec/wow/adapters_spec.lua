@@ -272,6 +272,16 @@ describe("WoW adapters", function()
         assert.equal(1, #ns.TradeSkillRecorder.recipesFor(db, "Dorf-Shammy"))
       end)
 
+      it("diagnoses which recipe API is used and what it reports", function()
+        local d = ns.TradeSkillRecorder.diagnose()
+        assert.equal("modern", d.path)
+        assert.equal("First Aid", d.profession)
+        assert.equal(2, d.total)
+        assert.equal(1, d.learned)
+        assert.equal(1, d.unlearned)
+        assert.is_true(d.hasLearnedFlag)
+      end)
+
       it("keeps other characters who did learn it", function()
         local db = { recipes = { ["First Aid:1078"] = { key = "First Aid:1078", name = "Recipe 78",
           profession = "First Aid", outputItemID = 1078, outputQty = 1, reagents = {},

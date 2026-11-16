@@ -40,6 +40,7 @@ local function printHelp()
   p("  /fg mobs - list the best mobs you've farmed")
   p("  /fg reset - start a new farming session")
   p("  /fg skills - show the professions ForeverGold has detected")
+  p("  /fg recipes - with a profession window open, show what the recipe recorder sees")
   p("  /fg minimap - show or hide the minimap button")
   p("  /fg config - list settings, /fg config <name> <value> to change one")
 end
@@ -85,6 +86,17 @@ local function setupCommands()
     help = printHelp,
     config = printConfig,
     mobs = printMobs,
+    recipes = function()
+      local d = ns.TradeSkillRecorder.diagnose()
+      local p = ns.Api.print
+      p(("recipe API: %s (classic %s, modern %s)"):format(d.path, tostring(d.hasClassic), tostring(d.hasModern)))
+      p(("profession window: %s, %d recipes listed"):format(tostring(d.profession), d.total))
+      if d.hasModern then
+        p(("modern list: %d recipes, %d learned, %d unlearned, learned flag %s"):format(
+          d.modernTotal or 0, d.learned, d.unlearned, d.hasLearnedFlag and "present" or "missing"))
+      end
+      p("Open a profession window first for useful numbers.")
+    end,
     skills = function()
       app:refreshSkills()
       local names = {}
