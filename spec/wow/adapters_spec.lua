@@ -142,6 +142,27 @@ describe("WoW adapters", function()
       assert.same({ Enchanting = 150, Tailoring = 75 }, ns.Professions.read())
     end)
 
+    it("reads skills from C_SkillInfo on WoW Forever, expanding collapsed headers first", function()
+      local lines = {
+        { name = "Secondary Skills", isHeader = true, isCollapsed = false },
+        { name = "Cooking", rank = 40 },
+        { name = "Professions", isHeader = true, isCollapsed = true },
+      }
+      local hidden = { { name = "Enchanting", rank = 120 }, { name = "Tailoring", rank = 90 } }
+      wow.install({
+        C_SkillInfo = {
+          GetNumSkillLines = function() return #lines end,
+          GetSkillLineInfo = function(i) return lines[i] end,
+          ExpandSkillHeader = function(i)
+            lines[i].isCollapsed = false
+            for n, h in ipairs(hidden) do table.insert(lines, i + n, h) end
+          end,
+        },
+      })
+      ns = addon.loadWith(ADAPTERS)
+      assert.same({ Cooking = 40, Enchanting = 120, Tailoring = 90 }, ns.Professions.read())
+    end)
+
     it("falls back to GetProfessions on clients without the skill list", function()
       wow.install({
         GetProfessions = function() return 1, nil end,
@@ -328,6 +349,41 @@ describe("WoW adapters", function()
       local found = false
       for _, l in ipairs(lines) do if l[1]:find("4 days old") then found = true end end
       assert.is_true(found)
+    end)
+
+    describe("disenchant estimate", function()
+      local function lines(estimate)
+        return ns.Tooltip.itemLines(1, 1, {
+          info = function() return nil end,
+          options = function() return {} end,
+          best = function() return nil end,
+          disenchant = function() return estimate end,
+          nameOf = function(id) return ({ [11137] = "Vision Dust", [11135] = "Greater Mystic Essence" })[id] end,
+        })
+      end
+
+      it("shows the estimate and the likely materials", function()
+        local out = lines({ value = 12000, canDo = true, complete = true, outcome = {
+          { itemID = 11137, chance = 0.75, min = 1, max = 2, price = 5000 },
+          { itemID = 11135, chance = 0.20, min = 1, max = 2, price = 20000 },
+        } })
+        assert.same({ "Disenchant (estimate)", "1g 20s" }, out[1])
+        assert.same({ "  1-2 Vision Dust (75%)", "50s each" }, out[2])
+        assert.same({ "  1-2 Greater Mystic Essence (20%)", "2g each" }, out[3])
+      end)
+
+      it("says when your Enchanting skill is too low", function()
+        local out = lines({ value = 12000, canDo = false, skillNeeded = 150, complete = true, outcome = {} })
+        assert.same({ "Disenchant (needs Enchanting 150)", "1g 20s" }, out[1])
+      end)
+
+      it("says when material prices are missing", function()
+        local out = lines({ value = 0, canDo = true, complete = false, outcome = {
+          { itemID = 11137, chance = 1, min = 1, max = 1 },
+        } })
+        assert.same({ "Disenchant (estimate)", "no material prices yet" }, out[1])
+        assert.same({ "  1 Vision Dust (100%)", "?" }, out[2])
+      end)
     end)
 
     it("shows nothing for items with no data", function()

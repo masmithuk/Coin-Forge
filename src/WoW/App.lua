@@ -111,6 +111,28 @@ function App:appraisal(marketKey)
   })
 end
 
+--- What disenchanting an item would give, for characters with Enchanting.
+--- @return nil (no Enchanting, or not disenchantable) or
+---   { value (net after AH cut), complete, canDo, skillNeeded,
+---     outcome = { {itemID, chance, min, max, price} } }
+function App:disenchantEstimate(itemID)
+  if not self.skills.Enchanting then return nil end
+  local item = ns.ItemInfo.get(itemID)
+  if not item or not ns.Disenchant.isDisenchantable(item) then return nil end
+  local key, neutral = self:market()
+  local valueOf = function(id) return self:value(id, key) end
+  local ev, complete = ns.Disenchant.expectedValue(item, valueOf)
+  local outcome = {}
+  for i, o in ipairs(ns.Disenchant.outcome(item)) do
+    outcome[i] = { itemID = o.itemID, chance = o.chance, min = o.min, max = o.max, price = valueOf(o.itemID) }
+  end
+  local skillNeeded = ns.Disenchant.requiredSkill(item)
+  return {
+    value = ns.Fees.net(ev, neutral), complete = complete, outcome = outcome,
+    skillNeeded = skillNeeded, canDo = self.skills.Enchanting >= skillNeeded,
+  }
+end
+
 --- Best value of one item (auction, vendor or disenchant), 0 if unknown.
 function App:valueOf(itemID)
   return self:appraisal():value(itemID)

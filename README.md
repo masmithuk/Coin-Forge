@@ -16,7 +16,7 @@ wherever you are: at the auctioneer, at vendors and out in the world.
 | **Conversions** | Every essence combine (3 lesser → 1 greater) and split (1 greater → 3 lesser), with live profit or loss. No profession needed. |
 | **Out in the world** | A coin and value over nameplates of mobs worth farming, plus "loot per kill" and best drops in the mob's tooltip. |
 | **Vendors** | Items a vendor sells for less than the AH pays glow green, with the profit shown underneath. |
-| **Item tooltips** | AH value, lowest listing, vendor price, disenchant value and the **best thing to do** with the item. |
+| **Item tooltips** | AH value, lowest listing, vendor price and the **best thing to do** with the item. Characters with Enchanting also see a disenchant estimate with the likely materials and their prices (and the skill needed, if yours is too low). |
 | **Home screen** | Opened from the minimap coin or `/fg`: status, a getting-started checklist, best deals, best mobs, gold per hour and a short guide. |
 
 ForeverGold never buys, posts or clicks for you. Every purchase goes through Blizzard's own UI.
@@ -113,6 +113,7 @@ of the units listed. Gear is posted buyout-only, so nobody can win it with a low
 | `/fg` | Open or close the home screen |
 | `/fg mobs` | List the 10 best mobs you've farmed |
 | `/fg reset` | Start a new farming session |
+| `/fg skills` | Show the professions ForeverGold has detected on this character |
 | `/fg minimap` | Show or hide the minimap coin |
 | `/fg config` | List settings with their current values |
 | `/fg config <name> <value>` | Change a setting, e.g. `/fg config minProfit 1g 50s` or `/fg config flipDiscount 25%` |

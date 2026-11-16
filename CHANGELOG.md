@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.3 (2026-11-16)
+
+- Fixed: professions were never detected on WoW Forever, which replaced the old skill functions with
+  `C_SkillInfo`. Disenchant values and deals, and the "Only what I can do" filter, now see your real skills.
+- Item tooltips show a disenchant estimate for characters with Enchanting: expected value after the AH cut,
+  the likely materials with their chances and prices, and the skill needed if yours is too low.
+- New `/fg skills` command shows the professions ForeverGold has detected.
+
 ## 0.3.2 (2026-11-15)
 
 - Searching an item anywhere (Blizzard's Buy tab, a deal row, or the Sell tab) now updates its price data and

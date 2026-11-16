@@ -27,12 +27,29 @@ function Tooltip.itemLines(itemID, count, deps)
   end
   local options = deps.options(itemID)
   if options.vendor then lines[#lines + 1] = { "Vendor", amount(options.vendor, count) } end
-  if options.disenchant then lines[#lines + 1] = { "Disenchant", ns.Money.short(options.disenchant) } end
+  Tooltip.disenchantLines(lines, deps.disenchant and deps.disenchant(itemID), deps.nameOf)
   local action, value = deps.best(itemID)
   if action and #lines > 1 then
     lines[#lines + 1] = { "Best: " .. ACTION_LABELS[action], ns.Money.short(value) }
   end
   return lines
+end
+
+--- Appends the disenchant estimate (see App:disenchantEstimate) and the
+--- likely materials. Shown only to characters with Enchanting.
+function Tooltip.disenchantLines(lines, e, nameOf)
+  if not e then return end
+  local label = e.canDo and "Disenchant (estimate)" or ("Disenchant (needs Enchanting %d)"):format(e.skillNeeded)
+  local value = (e.value > 0) and ns.Money.short(e.value) or "no material prices yet"
+  lines[#lines + 1] = { label, value }
+  for _, o in ipairs(e.outcome) do
+    local qty = o.min == o.max and tostring(o.min) or (o.min .. "-" .. o.max)
+    local name = nameOf and nameOf(o.itemID) or "?"
+    lines[#lines + 1] = {
+      ("  %s %s (%d%%)"):format(qty, name, math.floor(o.chance * 100 + 0.5)),
+      o.price and (ns.Money.short(o.price) .. " each") or "?",
+    }
+  end
 end
 
 --- @param deps { expected(npcID) -> ev, kills; topDrops(npcID) ; nameOf(itemID) }

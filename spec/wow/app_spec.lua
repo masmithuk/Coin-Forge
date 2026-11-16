@@ -193,6 +193,43 @@ describe("App", function()
     end)
   end)
 
+  describe("disenchant estimate", function()
+    local GREEN_CHEST = 5000
+    before_each(function()
+      items[GREEN_CHEST] = { "Green Chest", nil, 2, 38, 30, "Armor", "Cloth", 1, "INVTYPE_CHEST", 1, 450, 4 }
+    end)
+
+    it("is shown to characters with Enchanting, after the AH cut", function()
+      for day = 1, 2 do
+        now = (50 + day) * 86400
+        scan({ { itemID = 11137, count = 1, buyout = 1000 }, { itemID = 11135, count = 1, buyout = 1000 },
+          { itemID = 11139, count = 1, buyout = 1000 } })
+      end
+      app.skills = { Enchanting = 150 }
+      local e = app:disenchantEstimate(GREEN_CHEST)
+      -- (0.75*1.5 + 0.20*1.5 + 0.05*1) * 1000 = 1475 gross, 1401 after 5%
+      assert.equal(1401, e.value)
+      assert.is_true(e.canDo)
+      assert.is_true(e.complete)
+      assert.equal(3, #e.outcome)
+      assert.equal(1000, e.outcome[1].price)
+    end)
+
+    it("says what skill is needed when it's too low", function()
+      app.skills = { Enchanting = 10 }
+      local e = app:disenchantEstimate(GREEN_CHEST)
+      assert.is_false(e.canDo)
+      assert.equal(100, e.skillNeeded)
+    end)
+
+    it("is hidden from characters without Enchanting and for items that can't be disenchanted", function()
+      app.skills = { Tailoring = 300 }
+      assert.is_nil(app:disenchantEstimate(GREEN_CHEST))
+      app.skills = { Enchanting = 300 }
+      assert.is_nil(app:disenchantEstimate(4306))
+    end)
+  end)
+
   it("reports home screen state", function()
     local s = app:homeState()
     assert.is_false(s.scanned)

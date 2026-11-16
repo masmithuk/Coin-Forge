@@ -39,6 +39,7 @@ local function printHelp()
   p("  /fg - open or close the home screen")
   p("  /fg mobs - list the best mobs you've farmed")
   p("  /fg reset - start a new farming session")
+  p("  /fg skills - show the professions ForeverGold has detected")
   p("  /fg minimap - show or hide the minimap button")
   p("  /fg config - list settings, /fg config <name> <value> to change one")
 end
@@ -84,6 +85,14 @@ local function setupCommands()
     help = printHelp,
     config = printConfig,
     mobs = printMobs,
+    skills = function()
+      app:refreshSkills()
+      local names = {}
+      for name, rank in pairs(app.skills) do names[#names + 1] = name .. " " .. rank end
+      table.sort(names)
+      ns.Api.print(#names > 0 and ("professions found: " .. table.concat(names, ", "))
+        or "no professions found on this character.")
+    end,
     reset = function()
       app.session:reset(GetMoney())
       ns.Api.print("New session started.")
@@ -126,6 +135,8 @@ local function start()
       info = function(id) return app.prices:getInfo((app:market()), id) end,
       options = function(id) return app:appraisal():options(id) end,
       best = function(id) return app:appraisal():best(id) end,
+      disenchant = function(id) return app:disenchantEstimate(id) end,
+      nameOf = ns.ItemInfo.name,
     },
     unit = {
       expected = function(npcID) return app:mobValue(npcID) end,
@@ -194,6 +205,7 @@ for _, e in ipairs({ "TRADE_SKILL_SHOW", "TRADE_SKILL_UPDATE", "TRADE_SKILL_LIST
   on(e, recordRecipes)
 end
 on("SKILL_LINES_CHANGED", function() app:refreshSkills() end)
+on("PLAYER_LOGIN", function() app:refreshSkills() end) -- skill data may not be ready at ADDON_LOADED
 
 -- Selling: live search results and bag changes.
 for _, e in ipairs({ "COMMODITY_SEARCH_RESULTS_UPDATED", "ITEM_SEARCH_RESULTS_UPDATED" }) do
