@@ -1,13 +1,13 @@
 ## Interface: 16001
-## Title: ForeverGold
+## Title: Coinwise
 ## Notes: Gold-making companion: AH scanning, profitable mobs, vendor flips, disenchant / craft / arbitrage opportunities.
 ## Author: masmithuk
 ## Version: 0.4.0
-## SavedVariables: ForeverGoldDB
+## SavedVariables: CoinwiseDB
 ## IconTexture: Interface\Icons\INV_Misc_Coin_01
-## AddonCompartmentFunc: ForeverGold_OnCompartmentClick
-## AddonCompartmentFuncOnEnter: ForeverGold_OnCompartmentEnter
-## AddonCompartmentFuncOnLeave: ForeverGold_OnCompartmentLeave
+## AddonCompartmentFunc: Coinwise_OnCompartmentClick
+## AddonCompartmentFuncOnEnter: Coinwise_OnCompartmentEnter
+## AddonCompartmentFuncOnLeave: Coinwise_OnCompartmentLeave
 
 # Core: pure Lua, no WoW API. Loaded by the test suite in this order.
 src/Core/Namespace.lua

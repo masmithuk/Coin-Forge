@@ -3,7 +3,7 @@
 A release is one tag push. GitHub Actions (`.github/workflows/release.yml`) then:
 
 1. lints and runs the tests,
-2. builds `dist/ForeverGold-<version>.zip` with `scripts/package.sh` (only the files the game needs),
+2. builds `dist/Coinwise-<version>.zip` with `scripts/package.sh` (only the files the game needs),
 3. creates a GitHub release with the zip and the newest `CHANGELOG.md` entry as notes,
 4. uploads the zip to CurseForge as a **WoW Forever (1.60.1)** file with `scripts/upload-curseforge.sh`.
 
@@ -20,7 +20,7 @@ A release is one tag push. GitHub Actions (`.github/workflows/release.yml`) then
 
 ## Each release
 
-1. Update `## Version:` in `ForeverGold.toc`, `ns.version` in `src/Core/Namespace.lua`, and add a
+1. Update `## Version:` in `Coinwise.toc`, `ns.version` in `src/Core/Namespace.lua`, and add a
    `## x.y.z (date)` entry at the top of `CHANGELOG.md`.
 2. Commit and push, then tag the same version:
 
@@ -35,8 +35,8 @@ pre-releases. The workflow refuses to release if the tag and the `.toc` version 
 ## Checking locally
 
 ```sh
-scripts/package.sh                 # builds dist/ForeverGold-<version>.zip
-DRY_RUN=1 CF_API_KEY=... CF_PROJECT_ID=... scripts/upload-curseforge.sh dist/ForeverGold-0.4.0.zip 0.4.0
+scripts/package.sh                 # builds dist/Coinwise-<version>.zip
+DRY_RUN=1 CF_API_KEY=... CF_PROJECT_ID=... scripts/upload-curseforge.sh dist/Coinwise-0.4.0.zip 0.4.0
 ```
 
 `DRY_RUN=1` prints the CurseForge metadata instead of uploading.

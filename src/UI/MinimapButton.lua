@@ -1,5 +1,5 @@
 -- MinimapButton: a coin on the minimap. Click opens the home screen; hover
--- explains what ForeverGold does; drag moves it around the minimap.
+-- explains what Coinwise does; drag moves it around the minimap.
 local _, ns = ...
 
 local MinimapButton = {}
@@ -22,7 +22,7 @@ end
 --- Fills a tooltip with the explanation and live status. Shared with the
 --- addon compartment menu so both say the same thing.
 function MinimapButton.fillTooltip(tooltip, app)
-  tooltip:AddLine("ForeverGold", 1, 0.82, 0)
+  tooltip:AddLine("Coinwise", 1, 0.82, 0)
   tooltip:AddLine(ns.HomeModel.TAGLINE, 1, 1, 1, true)
   tooltip:AddLine(" ")
   tooltip:AddLine("- Deals tab next to the auction house", 0.8, 0.8, 0.8)
@@ -49,7 +49,7 @@ end
 function MinimapButton:Build()
   local minimap = _G.Minimap
   if not minimap then return nil end
-  local b = CreateFrame("Button", "ForeverGoldMinimapButton", minimap)
+  local b = CreateFrame("Button", "CoinwiseMinimapButton", minimap)
   self.button = b
   b:SetSize(31, 31)
   b:SetFrameStrata("MEDIUM")

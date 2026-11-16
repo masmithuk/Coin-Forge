@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lua 5.1, busted and luacheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lua5.1 luarocks lua-busted
+          sudo luarocks --lua-version 5.1 install luacheck
+      - name: Lint
+        run: luacheck .
+      - name: Test
+        run: busted
+      - name: Package
+        run: scripts/package.sh

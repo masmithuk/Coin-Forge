@@ -96,7 +96,7 @@ function TradeSkillRecorder.record(db, charKey)
   return #recipes
 end
 
---- What the open profession window looks like to the recorder (for /fg recipes):
+--- What the open profession window looks like to the recorder (for /cw recipes):
 --- which API path is used and how many recipes the game says are learned.
 function TradeSkillRecorder.diagnose()
   local d = {

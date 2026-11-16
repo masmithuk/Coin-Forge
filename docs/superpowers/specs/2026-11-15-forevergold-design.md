@@ -1,5 +1,8 @@
 # ForeverGold — Design
 
+> Renamed to **Coinwise** (slash command `/cw`) in 0.4.0, because other addons named ForeverGold
+> already exist on CurseForge. This document is kept as written at the time.
+
 Date: 2026-11-15 · Target: World of Warcraft: Forever (interface 16001, client 1.60.1)
 
 ## Intent

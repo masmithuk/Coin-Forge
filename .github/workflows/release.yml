@@ -1,0 +1,52 @@
+name: Release
+
+# Push a tag like v0.4.0 (or v0.5.0-beta1) to test, package and publish:
+#   git tag v0.4.0 && git push origin v0.4.0
+#
+# Needs, under Settings > Secrets and variables > Actions:
+#   secret   CF_API_KEY      a CurseForge API token
+#   variable CF_PROJECT_ID   the numeric id of the ForeverGold CurseForge project
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write # to create the GitHub release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Lua 5.1, busted and luacheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lua5.1 luarocks lua-busted jq zip
+          sudo luarocks --lua-version 5.1 install luacheck
+
+      - name: Lint and test
+        run: |
+          luacheck .
+          busted
+
+      - name: Package
+        id: package
+        run: echo "zip=$(scripts/package.sh "$GITHUB_REF_NAME")" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          scripts/changelog.sh > release-notes.md
+          prerelease=""
+          case "$GITHUB_REF_NAME" in *alpha*|*beta*) prerelease="--prerelease" ;; esac
+          gh release create "$GITHUB_REF_NAME" "${{ steps.package.outputs.zip }}" \
+            --title "ForeverGold ${GITHUB_REF_NAME#v}" --notes-file release-notes.md $prerelease
+
+      - name: Upload to CurseForge
+        env:
+          CF_API_KEY: ${{ secrets.CF_API_KEY }}
+          CF_PROJECT_ID: ${{ vars.CF_PROJECT_ID }}
+        run: scripts/upload-curseforge.sh "${{ steps.package.outputs.zip }}" "$GITHUB_REF_NAME"

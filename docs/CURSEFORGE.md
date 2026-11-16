@@ -1,4 +1,4 @@
-# ForeverGold
+# Coinwise
 
 **A gold-making companion for World of Warcraft: Forever.** It learns prices from your own auction house scans
 and searches, then points out money wherever you are: at the auctioneer, at vendors and out in the world.
@@ -17,13 +17,13 @@ and searches, then points out money wherever you are: at the auctioneer, at vend
 - **Tooltips:** AH value, vendor price, disenchant estimate (for enchanters) and the best thing to do.
 - **Home screen and minimap button** that explain everything in game.
 
-ForeverGold never buys, posts or clicks for you: every action goes through Blizzard's own UI and your clicks.
+Coinwise never buys, posts or clicks for you: every action goes through Blizzard's own UI and your clicks.
 
 ## Getting started
 
-1. Open an auction house and press **Scan** on the ForeverGold panel (one full scan every 15 minutes).
+1. Open an auction house and press **Scan** on the Coinwise panel (one full scan every 15 minutes).
 2. Scan again on another day: deals need two days of price history.
 3. Open each profession window once so your recipes are recorded.
-4. Type `/fg` for the home screen, `/fg help` for commands.
+4. Type `/cw` for the home screen, `/cw help` for commands.
 
 Source, issues and documentation: <https://github.com/masmithuk/ForeverGold>

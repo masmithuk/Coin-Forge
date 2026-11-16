@@ -17,7 +17,7 @@ function Nameplates.new(deps)
 end
 
 local function marker(plate)
-  local m = plate.ForeverGoldMarker
+  local m = plate.CoinwiseMarker
   if m then return m end
   m = CreateFrame("Frame", nil, plate)
   m:SetSize(18, 18)
@@ -28,7 +28,7 @@ local function marker(plate)
   local label = m:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
   label:SetPoint("LEFT", m, "RIGHT", 2, 0)
   m.label = label
-  plate.ForeverGoldMarker = m
+  plate.CoinwiseMarker = m
   return m
 end
 
@@ -44,8 +44,8 @@ function Nameplates:update(unit)
     local m = marker(plate)
     m.label:SetText(ns.Money.short(ev))
     m:Show()
-  elseif plate.ForeverGoldMarker then
-    plate.ForeverGoldMarker:Hide()
+  elseif plate.CoinwiseMarker then
+    plate.CoinwiseMarker:Hide()
   end
 end
 
@@ -58,7 +58,7 @@ function Nameplates:onEvent(event, unit)
     self:update(unit)
   elseif event == "NAME_PLATE_UNIT_REMOVED" then
     local plate = self.plates[unit]
-    if plate and plate.ForeverGoldMarker then plate.ForeverGoldMarker:Hide() end
+    if plate and plate.CoinwiseMarker then plate.CoinwiseMarker:Hide() end
     self.plates[unit] = nil
   end
 end

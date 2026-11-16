@@ -12,7 +12,7 @@ ns.App = App
 
 local TOP_DEALS_SAVED = 5
 
---- @param saved the ForeverGoldDB saved-variables table (mutated)
+--- @param saved the CoinwiseDB saved-variables table (mutated)
 --- @param clock function returning seconds
 function App.new(saved, clock)
   saved.settings = ns.Settings.apply(saved.settings)

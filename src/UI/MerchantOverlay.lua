@@ -86,7 +86,7 @@ function MerchantOverlay:Update()
   local s = summary(self)
   if #deals > 0 then
     local best = deals[1]
-    s.text:SetText(("|cffffd100ForeverGold|r  %d item%s here sell for more on the AH. Best: %s (+%s)"):format(
+    s.text:SetText(("|cffffd100Coinwise|r  %d item%s here sell for more on the AH. Best: %s (+%s)"):format(
       #deals, #deals == 1 and "" or "s", ns.ItemInfo.name(best.itemID) or "?", Money.short(best.totalProfit)))
     s:Show()
   else
