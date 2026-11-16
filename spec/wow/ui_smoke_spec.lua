@@ -44,24 +44,24 @@ describe("UI smoke test", function()
     env.MerchantFrame.selectedTab = 1
     for i = 1, 10 do _G["MerchantItem" .. i .. "ItemButton"] = wow.frame(env.MerchantFrame) end
     _G.AuctionHouseFrame, _G.MerchantFrame = env.AuctionHouseFrame, env.MerchantFrame
-    _G.CoinwiseDB = nil
+    _G.CoinForgeDB = nil
 
     ns = addon.load(addon.tocFiles())
     eventFrame = env.__created[1]
-    fire("ADDON_LOADED", "Coinwise")
+    fire("ADDON_LOADED", "CoinForge")
   end)
 
   after_each(function()
     for i = 1, 10 do _G["MerchantItem" .. i .. "ItemButton"] = nil end
-    _G.CoinwiseDB = nil
+    _G.CoinForgeDB = nil
     wow.uninstall()
   end)
 
   it("boots, registers the slash command and the minimap button", function()
     assert.is_table(ns.app)
-    assert.is_function(_G.SlashCmdList.COINWISE)
-    assert.is_not_nil(_G.CoinwiseMinimapButton)
-    assert.is_function(_G.Coinwise_OnCompartmentClick)
+    assert.is_function(_G.SlashCmdList.COINFORGE)
+    assert.is_not_nil(_G.CoinForgeMinimapButton)
+    assert.is_function(_G.CoinForge_OnCompartmentClick)
   end)
 
   it("still boots on a client that rejects event names it doesn't know (WoW Forever)", function()
@@ -76,25 +76,25 @@ describe("UI smoke test", function()
     local fresh = wow.install({ C_EventUtils = { IsEventValid = function(e) return valid[e] == true end } })
     local ok, err = pcall(function()
       local freshNs = addon.load(addon.tocFiles())
-      fresh.__created[1]:Fire("OnEvent", "ADDON_LOADED", "Coinwise")
+      fresh.__created[1]:Fire("OnEvent", "ADDON_LOADED", "CoinForge")
       assert.is_table(freshNs.app)
     end)
     wow.validEvents = nil
     assert.is_true(ok, tostring(err))
-    assert.is_not_nil(_G.CoinwiseMinimapButton)
+    assert.is_not_nil(_G.CoinForgeMinimapButton)
   end)
 
   it("opens the home screen from the slash command and minimap", function()
-    _G.SlashCmdList.COINWISE("")
-    assert.is_true(_G.CoinwiseHome.shown)
-    _G.CoinwiseMinimapButton:Fire("OnClick")
-    assert.is_false(_G.CoinwiseHome.shown)
-    _G.CoinwiseMinimapButton:Fire("OnEnter")
+    _G.SlashCmdList.COINFORGE("")
+    assert.is_true(_G.CoinForgeHome.shown)
+    _G.CoinForgeMinimapButton:Fire("OnClick")
+    assert.is_false(_G.CoinForgeHome.shown)
+    _G.CoinForgeMinimapButton:Fire("OnEnter")
   end)
 
   it("shows the auction panel, scans across days and lists deals", function()
     fire("AUCTION_HOUSE_SHOW")
-    local panel = _G.CoinwiseAuctionPanel
+    local panel = _G.CoinForgeAuctionPanel
     assert.is_true(panel.shown)
     for day = 1, 3 do
       now = (100 + day) * 86400
@@ -116,7 +116,7 @@ describe("UI smoke test", function()
     assert.is_table(p)
     panel:SetSize(320, 300)
     panel:Fire("OnSizeChanged")
-    _G.SlashCmdList.COINWISE("config minProfit 2s")
+    _G.SlashCmdList.COINFORGE("config minProfit 2s")
     assert.equal(200, ns.app.settings.minProfit)
   end)
 
@@ -315,7 +315,7 @@ describe("UI smoke test", function()
     fire("LOOT_OPENED")
     fire("LOOT_SLOT_CLEARED", 1)
     fire("NAME_PLATE_UNIT_ADDED", "nameplate1")
-    assert.is_true(plate.CoinwiseMarker.shown)
+    assert.is_true(plate.CoinForgeMarker.shown)
     fire("NAME_PLATE_UNIT_REMOVED", "nameplate1")
   end)
 
@@ -323,17 +323,17 @@ describe("UI smoke test", function()
     ns.app.loot:record(5, "g", {}, 50000)
     ns.app.settings.mobMinKills = 1
     ns.app.db.lastDeals = { { kind = "flip", itemID = 4306, profit = 500 } }
-    _G.SlashCmdList.COINWISE("")
-    local home = _G.CoinwiseHome
+    _G.SlashCmdList.COINFORGE("")
+    local home = _G.CoinForgeHome
     home:SetSize(320, 400)
     home:Fire("OnSizeChanged")
-    _G.SlashCmdList.COINWISE("mobs")
-    _G.SlashCmdList.COINWISE("help")
-    _G.SlashCmdList.COINWISE("config")
-    _G.SlashCmdList.COINWISE("skills")
-    _G.SlashCmdList.COINWISE("recipes")
-    _G.SlashCmdList.COINWISE("reset")
-    _G.SlashCmdList.COINWISE("minimap")
+    _G.SlashCmdList.COINFORGE("mobs")
+    _G.SlashCmdList.COINFORGE("help")
+    _G.SlashCmdList.COINFORGE("config")
+    _G.SlashCmdList.COINFORGE("skills")
+    _G.SlashCmdList.COINFORGE("recipes")
+    _G.SlashCmdList.COINFORGE("reset")
+    _G.SlashCmdList.COINFORGE("minimap")
     assert.is_false(ns.app.settings.showMinimap)
   end)
 end)

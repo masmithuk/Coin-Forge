@@ -1,6 +1,6 @@
 # Architecture
 
-Coinwise is split into three layers so the parts that make decisions can be
+Coin Forge is split into three layers so the parts that make decisions can be
 tested without the game, and the parts that touch the game stay small.
 
 ```
@@ -35,7 +35,7 @@ tested without the game, and the parts that touch the game stay small.
 | `Events` | Tiny pub/sub bus (`scanComplete`, `opportunitiesUpdated`, ...) |
 | `Money` | Copper formatting (`1g 23s 45c`) and parsing |
 | `Stats` | Median, mean, quantity-weighted percentile |
-| `Settings` | Defaults, typed setters for `/cw config` |
+| `Settings` | Defaults, typed setters for `/cforge config` |
 | `Fees` | AH cut (5% faction, 15% neutral) |
 | `GUID` | NPC id from a creature GUID |
 | `ListingStore` | Compact saved copy of the last scan's listings, restored after `/reload` |
@@ -49,7 +49,7 @@ tested without the game, and the parts that touch the game stay small.
 | `SellPricing` | Suggested posting price: own listings, bait, price wars, undercut, vendor check |
 | `VendorAnalysis` | Which merchant items are worth more on the AH |
 | `Session` | Gold per hour |
-| `Commands` | `/cw` parsing and routing |
+| `Commands` | `/cforge` parsing and routing |
 | `PanelModel`, `HomeModel` | Text and filtering for the UI, kept testable |
 | `Layout` | Responsive maths: column widths and hiding, rows that fit |
 
@@ -97,10 +97,10 @@ its entry in the current listings, then the finders re-run.
 The last scan's listings are also saved in compact form (`ListingStore`: each item's 20 cheapest price
 levels) and restored after a `/reload`, so deals don't wait for the next 15-minute scan window.
 
-## Saved data (`CoinwiseDB`, account-wide)
+## Saved data (`CoinForgeDB`, account-wide)
 
 ```lua
-CoinwiseDB = {
+CoinForgeDB = {
   settings = { minProfit = 5000, ... },
   markets = { ["Forever|Horde"] = { lastScan = t, items = { [itemID] = { snaps = { {day, low, value, qty} } } } } },
   mobs = { [npcID] = { name, kills, copper, drops = { [itemID] = qty } } },

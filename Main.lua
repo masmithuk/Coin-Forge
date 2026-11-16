@@ -1,5 +1,5 @@
 -- Main: entry point. Creates the App once saved variables load, connects game
--- events to the services, and registers the /cw command.
+-- events to the services, and registers the /cforge command.
 local addonName, ns = ...
 
 local events = CreateFrame("Frame")
@@ -36,13 +36,13 @@ end
 local function printHelp()
   local p = ns.Api.print
   p("commands:")
-  p("  /cw - open or close the home screen")
-  p("  /cw mobs - list the best mobs you've farmed")
-  p("  /cw reset - start a new farming session")
-  p("  /cw skills - show the professions Coinwise has detected")
-  p("  /cw recipes - with a profession window open, show what the recipe recorder sees")
-  p("  /cw minimap - show or hide the minimap button")
-  p("  /cw config - list settings, /cw config <name> <value> to change one")
+  p("  /cforge - open or close the home screen")
+  p("  /cforge mobs - list the best mobs you've farmed")
+  p("  /cforge reset - start a new farming session")
+  p("  /cforge skills - show the professions Coin Forge has detected")
+  p("  /cforge recipes - with a profession window open, show what the recipe recorder sees")
+  p("  /cforge minimap - show or hide the minimap button")
+  p("  /cforge config - list settings, /cforge config <name> <value> to change one")
 end
 
 local function printConfig(args)
@@ -114,23 +114,23 @@ local function setupCommands()
       minimap:Apply()
     end,
   })
-  _G.SLASH_COINWISE1, _G.SLASH_COINWISE2 = "/cw", "/coinwise"
-  SlashCmdList.COINWISE = function(text) router:run(text) end
+  _G.SLASH_COINFORGE1, _G.SLASH_COINFORGE2 = "/cforge", "/coinforge"
+  SlashCmdList.COINFORGE = function(text) router:run(text) end
 end
 
 local function setupAddonCompartment()
-  _G.Coinwise_OnCompartmentClick = function() home:Toggle() end
-  _G.Coinwise_OnCompartmentEnter = function(_, button)
+  _G.CoinForge_OnCompartmentClick = function() home:Toggle() end
+  _G.CoinForge_OnCompartmentEnter = function(_, button)
     GameTooltip:SetOwner(button or UIParent, "ANCHOR_LEFT")
     ns.MinimapButton.fillTooltip(GameTooltip, app)
     GameTooltip:Show()
   end
-  _G.Coinwise_OnCompartmentLeave = function() GameTooltip:Hide() end
+  _G.CoinForge_OnCompartmentLeave = function() GameTooltip:Hide() end
 end
 
 local function start()
-  _G.CoinwiseDB = _G.CoinwiseDB or {}
-  app = ns.App.new(_G.CoinwiseDB, time)
+  _G.CoinForgeDB = _G.CoinForgeDB or {}
+  app = ns.App.new(_G.CoinForgeDB, time)
   ns.app = app
 
   home = ns.HomeScreen.new(app)
@@ -174,7 +174,7 @@ local function start()
 
   if not app.db.ui.welcomed then
     app.db.ui.welcomed = true
-    ns.Api.print("loaded. Click the coin on your minimap (or type /cw) to get started.")
+    ns.Api.print("loaded. Click the coin on your minimap (or type /cforge) to get started.")
   end
 end
 

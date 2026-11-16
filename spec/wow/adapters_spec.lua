@@ -369,9 +369,9 @@ describe("WoW adapters", function()
         valueOf = function() return 5000, 3 end,
       })
       np:onEvent("NAME_PLATE_UNIT_ADDED", "nameplate1")
-      assert.is_true(plate.CoinwiseMarker.shown)
+      assert.is_true(plate.CoinForgeMarker.shown)
       np:onEvent("NAME_PLATE_UNIT_REMOVED", "nameplate1")
-      assert.is_false(plate.CoinwiseMarker.shown)
+      assert.is_false(plate.CoinForgeMarker.shown)
     end)
   end)
 

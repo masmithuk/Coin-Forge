@@ -26,7 +26,7 @@ end
 --- Prints a message to the chat frame with the addon prefix.
 function Api.print(message)
   if DEFAULT_CHAT_FRAME then
-    DEFAULT_CHAT_FRAME:AddMessage("|cffffd100Coinwise|r: " .. tostring(message))
+    DEFAULT_CHAT_FRAME:AddMessage("|cffffd100Coin Forge|r: " .. tostring(message))
   end
 end
 

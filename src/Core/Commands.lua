@@ -1,4 +1,4 @@
--- Commands: parsing and routing for the /cw slash command.
+-- Commands: parsing and routing for the /cforge slash command.
 local _, ns = ...
 
 local Commands = {}

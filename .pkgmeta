@@ -1,4 +1,4 @@
-package-as: Coinwise
+package-as: CoinForge
 
 ignore:
   - spec

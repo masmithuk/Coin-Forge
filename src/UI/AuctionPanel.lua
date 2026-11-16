@@ -1,4 +1,4 @@
--- AuctionPanel: the Coinwise panel docked to the right of the auction house.
+-- AuctionPanel: the Coin Forge panel docked to the right of the auction house.
 --
 -- Two views, Deals and Crafting, chosen with text tabs. The only button is
 -- Scan. Clicking any row searches for that item in Blizzard's Buy tab right
@@ -71,7 +71,7 @@ function AuctionPanel.new(app)
 end
 
 function AuctionPanel:Build(anchor)
-  local f = CreateFrame("Frame", "CoinwiseAuctionPanel", anchor or UIParent, "BackdropTemplate")
+  local f = CreateFrame("Frame", "CoinForgeAuctionPanel", anchor or UIParent, "BackdropTemplate")
   self.frame = f
   f:SetSize(self.store.width or 440, self.store.height or (anchor and anchor:GetHeight() or 440))
   if anchor then f:SetPoint("TOPLEFT", anchor, "TOPRIGHT", 4, 0) else f:SetPoint("CENTER") end
@@ -85,7 +85,7 @@ function AuctionPanel:Build(anchor)
   -- Header: title, where you are, and how fresh the data is.
   local title = W.text(f, "GameFontNormalLarge", C.gold)
   title:SetPoint("TOPLEFT", 12, -10)
-  title:SetText("Coinwise")
+  title:SetText("Coin Forge")
   self.marketText = W.text(f, "GameFontHighlightSmall", C.muted)
   self.marketText:SetPoint("LEFT", title, "RIGHT", 8, -1)
 

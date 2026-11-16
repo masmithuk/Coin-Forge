@@ -5,7 +5,7 @@ name: Release
 #
 # Needs, under Settings > Secrets and variables > Actions:
 #   secret   CF_API_KEY      a CurseForge API token
-#   variable CF_PROJECT_ID   the numeric id of the ForeverGold CurseForge project
+#   variable CF_PROJECT_ID   the numeric id of the Coinwise CurseForge project
 
 on:
   push:
@@ -43,7 +43,7 @@ jobs:
           prerelease=""
           case "$GITHUB_REF_NAME" in *alpha*|*beta*) prerelease="--prerelease" ;; esac
           gh release create "$GITHUB_REF_NAME" "${{ steps.package.outputs.zip }}" \
-            --title "ForeverGold ${GITHUB_REF_NAME#v}" --notes-file release-notes.md $prerelease
+            --title "Coinwise ${GITHUB_REF_NAME#v}" --notes-file release-notes.md $prerelease
 
       - name: Upload to CurseForge
         env:

@@ -12,7 +12,7 @@
 #   DRY_RUN=1       print what would be uploaded instead of uploading;
 #                   reads game versions from VERSIONS_JSON (a file) if set
 #
-# Usage: scripts/upload-curseforge.sh dist/Coinwise-1.2.3.zip 1.2.3
+# Usage: scripts/upload-curseforge.sh dist/CoinForge-1.2.3.zip 1.2.3
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -46,7 +46,7 @@ if [ "$ids" = "[]" ]; then
 fi
 
 metadata=$(jq -n \
-  --arg name "Coinwise $version" \
+  --arg name "Coin Forge $version" \
   --arg type "$release_type" \
   --arg changelog "$(scripts/changelog.sh)" \
   --argjson versions "$ids" \

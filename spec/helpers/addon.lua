@@ -6,8 +6,8 @@
 
 local M = {}
 
-local ADDON_NAME = "Coinwise"
-local TOC_PATH = "Coinwise.toc"
+local ADDON_NAME = "CoinForge"
+local TOC_PATH = "CoinForge.toc"
 
 --- Returns the ordered list of source files declared in the .toc.
 -- @param prefix optional path prefix filter, e.g. "src/Core/"

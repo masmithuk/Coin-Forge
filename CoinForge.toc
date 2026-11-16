@@ -1,13 +1,13 @@
 ## Interface: 16001
-## Title: Coinwise
+## Title: Coin Forge
 ## Notes: Gold-making companion: AH scanning, profitable mobs, vendor flips, disenchant / craft / arbitrage opportunities.
 ## Author: masmithuk
 ## Version: 0.4.0
-## SavedVariables: CoinwiseDB
+## SavedVariables: CoinForgeDB
 ## IconTexture: Interface\Icons\INV_Misc_Coin_01
-## AddonCompartmentFunc: Coinwise_OnCompartmentClick
-## AddonCompartmentFuncOnEnter: Coinwise_OnCompartmentEnter
-## AddonCompartmentFuncOnLeave: Coinwise_OnCompartmentLeave
+## AddonCompartmentFunc: CoinForge_OnCompartmentClick
+## AddonCompartmentFuncOnEnter: CoinForge_OnCompartmentEnter
+## AddonCompartmentFuncOnLeave: CoinForge_OnCompartmentLeave
 
 # Core: pure Lua, no WoW API. Loaded by the test suite in this order.
 src/Core/Namespace.lua

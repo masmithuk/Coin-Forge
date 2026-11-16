@@ -4,17 +4,17 @@
 
 First public release on CurseForge, for WoW Forever (1.60.1).
 
-- **Renamed from ForeverGold to Coinwise**, because other addons called ForeverGold already exist. The slash
-  command is now `/cw` (or `/coinwise`), and the folder, title and saved data are named Coinwise.
+- **Renamed from ForeverGold to Coin Forge**, because other addons called ForeverGold already exist. The slash
+  command is now `/cforge` (or `/coinforge`), and the folder, title and saved data are named CoinForge.
 
 - AH scanning with price history per auction house, kept fresh by your own searches.
 - Deals: flips, vendor snipes, From vendor, essence conversions, disenchanting, crafts and other-AH arbitrage.
 - Sell tab with trap-aware pricing (ignores bait and price wars, never undercuts you) and one-click posting.
 - Crafting profit and loss, a Conversions view, profitable-mob nameplates, vendor highlights, smart tooltips.
-- New `/cw recipes` command shows what the recipe recorder sees in an open profession window.
+- New `/cforge recipes` command shows what the recipe recorder sees in an open profession window.
 
 Known issue: recipes recorded by earlier versions may still show as learned when they aren't. Opening the
-profession window corrects them in most cases. Please report `/cw recipes` output if it doesn't.
+profession window corrects them in most cases. Please report `/cforge recipes` output if it doesn't.
 
 ## 0.3.6 (2026-11-16)
 
@@ -46,7 +46,7 @@ profession window corrects them in most cases. Please report `/cw recipes` outpu
   `C_SkillInfo`. Disenchant values and deals, and the "Only what I can do" filter, now see your real skills.
 - Item tooltips show a disenchant estimate for characters with Enchanting: expected value after the AH cut,
   the likely materials with their chances and prices, and the skill needed if yours is too low.
-- New `/cw skills` command shows the professions Coinwise has detected.
+- New `/cforge skills` command shows the professions Coin Forge has detected.
 - Fixed: clicking 2 h / 8 h / 24 h didn't move the highlight, so 8 h always looked selected (the chosen
   duration was used, it just wasn't shown). Every tab bar now highlights a click immediately.
 
@@ -97,4 +97,4 @@ First release for WoW Forever (interface 16001).
 - Vendor items worth more on the AH glow green in the merchant window.
 - Item tooltips with AH value, vendor, disenchant value and the best action.
 - Home screen, minimap button and addon-compartment entry that explain the addon.
-- Farming session tracker (gold per hour) and `/cw` commands.
+- Farming session tracker (gold per hour) and `/cforge` commands.

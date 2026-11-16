@@ -13,7 +13,7 @@ files["spec/"] = {
   globals = { "_G" },
 }
 
-files["Main.lua"] = { globals = { "CoinwiseDB", "SLASH_COINWISE1", "SLASH_COINWISE2", "SlashCmdList" } }
+files["Main.lua"] = { globals = { "CoinForgeDB", "SLASH_COINFORGE1", "SLASH_COINFORGE2", "SlashCmdList" } }
 
 -- Read-only WoW API globals used by adapters and UI.
 read_globals = {

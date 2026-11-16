@@ -1,4 +1,4 @@
--- Widgets: the small UI kit every Coinwise screen is built from.
+-- Widgets: the small UI kit every Coin Forge screen is built from.
 --
 -- Design rules (see docs/ARCHITECTURE.md#ui):
 --   * Flat dark panels, one accent colour (gold) for what matters: profit.

@@ -67,7 +67,7 @@ end
 
 local function addLines(tooltip, lines)
   if #lines == 0 then return end
-  tooltip:AddLine("Coinwise", 1, 0.82, 0)
+  tooltip:AddLine("Coin Forge", 1, 0.82, 0)
   for _, l in ipairs(lines) do tooltip:AddDoubleLine(l[1], l[2], 0.8, 0.8, 0.8, 1, 1, 1) end
 end
 

@@ -19,7 +19,7 @@ end
 function HomeModel.features()
   return {
     { title = "Scan the auction house",
-      text = "Press Scan on the Coinwise tab. Prices build up over days, so scan whenever you visit." },
+      text = "Press Scan on the Coin Forge tab. Prices build up over days, so scan whenever you visit." },
     { title = "Deals at the auctioneer",
       text = "Flips, vendor snipes, disenchanting, essence conversions, crafts and other-AH arbitrage, best first." },
     { title = "Sell in a click",
@@ -36,7 +36,7 @@ function HomeModel.features()
     { title = "Smarter tooltips",
       text = "Item tooltips show AH value, vendor price, disenchant value and the best thing to do with it." },
     { title = "Session tracker",
-      text = "Gold per hour from coin and loot since you logged in. Type /cw reset to start over." },
+      text = "Gold per hour from coin and loot since you logged in. Type /cforge reset to start over." },
   }
 end
 

@@ -25,7 +25,7 @@ end
 
 function HomeScreen:Build()
   local f = W.window({
-    name = "CoinwiseHome", title = "Coinwise", width = 420, height = 520,
+    name = "CoinForgeHome", title = "Coin Forge", width = 420, height = 520,
     minW = 300, minH = 260, store = self.app.db.ui.home,
   })
   self.frame = f
@@ -134,7 +134,7 @@ function HomeScreen:Render()
     add(feature.title, "GameFontHighlight", C.text, 1)
     add(feature.text, nil, C.muted, 6)
   end
-  add("Type /cw help for commands.", nil, C.muted)
+  add("Type /cforge help for commands.", nil, C.muted)
 
   for i = self.used + 1, #self.pool do self.pool[i]:Hide() end
   self.content:SetHeight(y + PAD)

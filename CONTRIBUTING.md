@@ -44,7 +44,7 @@ For bugs: write a test that reproduces the bug first, then fix it.
 | creates frames | `src/UI/`, with its logic moved into a Core model | `spec/wow/ui_smoke_spec.lua` |
 | is static game data | `src/Data/` | via the module that reads it |
 
-Every new file must be added to `Coinwise.toc` **in load order**. The test loader reads the `.toc`,
+Every new file must be added to `CoinForge.toc` **in load order**. The test loader reads the `.toc`,
 so a missing entry fails the tests.
 
 ## Conventions
