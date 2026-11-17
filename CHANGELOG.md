@@ -6,6 +6,8 @@
   ingredient (Tin Ore into Tin Bar, 2 Linen Cloth into a bandage, essence combining and splitting...),
   valued per item you start with at today's prices after the AH cut. Green means better than selling it as
   it is, red means worse. Recipes known only by another character show that character's name.
+- Releases: publishing a GitHub release (any tag style, `0.5.0` or `v0.5.0`) now builds and uploads to
+  CurseForge; re-running a failed release is safe.
 - Sell tab: recommends **Craft first** when a recipe this character knows makes the item worth more than
   posting, vendoring or disenchanting it, and says by how much.
 

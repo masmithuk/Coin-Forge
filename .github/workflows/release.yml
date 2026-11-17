@@ -1,10 +1,13 @@
 name: Release
 
-# Push a tag like v0.4.0 (or v0.5.0-beta1) to test, package and publish:
-#   git tag v0.4.0 && git push origin v0.4.0
+# Publishing a release on GitHub (Releases > Draft a new release) packages it
+# and uploads it to CurseForge. Use a tag that matches "## Version:" in
+# CoinForge.toc, with or without a leading v (0.5.0 or v0.5.0). Tags with
+# "alpha" or "beta" in them become alpha/beta files.
 #
-# If a step fails (e.g. a missing secret), fix it and use "Re-run jobs" on the run:
-# every step is safe to repeat.
+# Also runnable by hand: Actions > Release > Run workflow, for an existing tag.
+# If a step fails (e.g. a missing secret), fix it and use "Re-run jobs" on the
+# run: every step is safe to repeat.
 #
 # Needs, under Settings > Secrets and variables > Actions:
 #   secret   CF_API_KEY      a CurseForge API token
@@ -12,8 +15,13 @@ name: Release
 #                            (a secret of the same name works too)
 
 on:
-  push:
-    tags: ["v*"]
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to release, e.g. v0.5.0"
+        required: true
 
 permissions:
   contents: write # to create the GitHub release
@@ -23,6 +31,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
+
+      - name: Work out the tag
+        run: echo "TAG=${{ github.event.release.tag_name || inputs.tag }}" >> "$GITHUB_ENV"
 
       - name: Install Lua 5.1, busted and luacheck
         run: |
@@ -37,7 +50,7 @@ jobs:
 
       - name: Package
         id: package
-        run: echo "zip=$(scripts/package.sh "$GITHUB_REF_NAME")" >> "$GITHUB_OUTPUT"
+        run: echo "zip=$(scripts/package.sh "$TAG")" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub release
         env:
@@ -45,17 +58,21 @@ jobs:
         run: |
           scripts/changelog.sh > release-notes.md
           prerelease=""
-          case "$GITHUB_REF_NAME" in *alpha*|*beta*) prerelease="--prerelease" ;; esac
+          case "$TAG" in *alpha*|*beta*) prerelease="--prerelease" ;; esac
           # safe to re-run: reuse the release if an earlier run already created it
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" "${{ steps.package.outputs.zip }}" --clobber
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "${{ steps.package.outputs.zip }}" --clobber
+            # a release made by hand may have no notes: use the changelog entry
+            if [ -z "$(gh release view "$TAG" --json body -q .body)" ]; then
+              gh release edit "$TAG" --notes-file release-notes.md
+            fi
           else
-            gh release create "$GITHUB_REF_NAME" "${{ steps.package.outputs.zip }}" \
-              --title "Coin Forge ${GITHUB_REF_NAME#v}" --notes-file release-notes.md $prerelease
+            gh release create "$TAG" "${{ steps.package.outputs.zip }}" \
+              --title "Coin Forge ${TAG#v}" --notes-file release-notes.md $prerelease
           fi
 
       - name: Upload to CurseForge
         env:
           CF_API_KEY: ${{ secrets.CF_API_KEY }}
           CF_PROJECT_ID: ${{ vars.CF_PROJECT_ID || secrets.CF_PROJECT_ID }}
-        run: scripts/upload-curseforge.sh "${{ steps.package.outputs.zip }}" "$GITHUB_REF_NAME"
+        run: scripts/upload-curseforge.sh "${{ steps.package.outputs.zip }}" "$TAG"
