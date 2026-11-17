@@ -98,13 +98,13 @@ describe("UI smoke test", function()
     assert.is_true(panel.shown)
     for day = 1, 3 do
       now = (100 + day) * 86400
-      ns.app.scanner.state.lastStart = nil
+      ns.app.scanner:resetCooldowns()
       replicate = { { itemID = 4306, count = 20, buyout = 20 * 100 } }
       ns.app:startScan()
       fire("REPLICATE_ITEM_LIST_UPDATE")
     end
     now = now + 86400
-    ns.app.scanner.state.lastStart = nil
+    ns.app.scanner:resetCooldowns()
     replicate = { { itemID = 4306, count = 200, buyout = 200 * 10 }, { itemID = 4306, count = 20, buyout = 2000 } }
     ns.app.settings.minProfit = 1
     ns.app:startScan()
@@ -227,7 +227,7 @@ describe("UI smoke test", function()
     replicate = { { itemID = 4306, count = 20, buyout = 20 * 100 } }
     for day = 1, 2 do
       now = (100 + day) * 86400
-      ns.app.scanner.state.lastStart = nil
+      ns.app.scanner:resetCooldowns()
       ns.app:startScan()
       fire("REPLICATE_ITEM_LIST_UPDATE")
     end
@@ -294,7 +294,7 @@ describe("UI smoke test", function()
     replicate = { { itemID = 4306, count = 20, buyout = 20 * 100 } }
     for day = 1, 3 do
       now = (100 + day) * 86400
-      ns.app.scanner.state.lastStart = nil
+      ns.app.scanner:resetCooldowns()
       ns.app:startScan()
       fire("REPLICATE_ITEM_LIST_UPDATE")
     end
@@ -322,7 +322,7 @@ describe("UI smoke test", function()
   it("renders the home screen with data and on resize", function()
     ns.app.loot:record(5, "g", {}, 50000)
     ns.app.settings.mobMinKills = 1
-    ns.app.db.lastDeals = { { kind = "flip", itemID = 4306, profit = 500 } }
+    ns.app.db.lastDeals = { [ns.app:market()] = { { kind = "flip", itemID = 4306, profit = 500 } } }
     _G.SlashCmdList.COINFORGE("")
     local home = _G.CoinForgeHome
     home:SetSize(320, 400)

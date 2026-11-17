@@ -107,9 +107,9 @@ CoinForgeDB = {
   mobs = { [npcID] = { name, kills, copper, drops = { [itemID] = qty } } },
   recipes = { ["Tailoring:4305"] = { name, profession, outputItemID, outputQty, reagents, crafters = { ["Name-Realm"] = true } } },
   vendorPrices = { [itemID] = copperPerUnit },
-  lastDeals = { top 5 deals from the last scan, for the home screen },
-  lastListings = { marketKey, time, items = { [itemID] = "price:count,..." } },
-  scanner = { lastStart = t },
+  lastDeals = { [marketKey] = top 5 deals from that AH's last scan, for the home screen },
+  listings = { [marketKey] = { marketKey, time, items = { [itemID] = "price:count,..." } } },
+  scanner = { byRealm = { [realm] = last scan start } },  -- 15-minute cooldown per realm
   ui = { home = {geometry}, auctionPanel = {geometry, onlyCanDo}, minimap = { angle }, welcomed = true },
 }
 ```

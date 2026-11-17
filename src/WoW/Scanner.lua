@@ -1,7 +1,10 @@
 -- Scanner: full auction house scan via C_AuctionHouse.ReplicateItems.
 --
--- The server allows one full scan every 15 minutes. Results are processed in
--- batches across frames so the client never freezes.
+-- The server allows one full scan every 15 minutes per realm. On WoW Forever each
+-- ruleset (PvE, PvP...) is its own realm, so the cooldown is tracked per realm:
+-- scanning on a PvE character never blocks a PvP one. A realm's faction and
+-- neutral auction houses share it. Results are processed in batches across
+-- frames so the client never freezes.
 --
 -- Events emitted on the bus:
 --   "scanStarted"   (marketKey)
@@ -21,32 +24,43 @@ local COUNT, BUYOUT, ITEM_ID = 3, 10, 17
 
 --- @param prices PriceDB
 --- @param events Events bus
---- @param db persisted table (remembers the last scan time across reloads)
+--- @param db persisted table (remembers each realm's last scan time across reloads)
 function Scanner.new(prices, events, db)
   db.scanner = db.scanner or {}
+  db.scanner.lastStart = nil -- the old account-wide cooldown, no longer used
+  db.scanner.byRealm = db.scanner.byRealm or {}
   return setmetatable({ prices = prices, events = events, state = db.scanner, running = false }, Scanner)
+end
+
+local function realmOf(marketKey)
+  return ns.Market.realmOf(marketKey or "") or marketKey or "?"
 end
 
 function Scanner.isSupported()
   return ns.Api.has("C_AuctionHouse.ReplicateItems")
 end
 
---- Seconds until the next scan is allowed (0 if now).
-function Scanner:cooldownLeft()
-  local last = self.state.lastStart
+--- Seconds until the next scan is allowed on this market's realm (0 if now).
+function Scanner:cooldownLeft(marketKey)
+  local last = self.state.byRealm[realmOf(marketKey)]
   if not last then return 0 end
   return math.max(0, Scanner.COOLDOWN - (time() - last))
+end
+
+--- Forgets every realm's cooldown (for tests).
+function Scanner:resetCooldowns()
+  self.state.byRealm = {}
 end
 
 --- Starts a scan. Returns true, or false plus seconds to wait / a reason.
 function Scanner:start(marketKey)
   if self.running then return false, "running" end
   if not Scanner.isSupported() then return false, "unsupported" end
-  local wait = self:cooldownLeft()
+  local wait = self:cooldownLeft(marketKey)
   if wait > 0 then return false, wait end
   self.running = true
   self.marketKey = marketKey
-  self.state.lastStart = time()
+  self.state.byRealm[realmOf(marketKey)] = time()
   self.events:emit("scanStarted", marketKey)
   C_AuctionHouse.ReplicateItems()
   return true

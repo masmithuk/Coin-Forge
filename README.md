@@ -61,7 +61,10 @@ The minimap coin's tooltip and the home screen explain all of this in game as we
 - **Searches keep prices fresh.** Whenever you search an item (in Blizzard's Buy tab, by clicking a deal, or
   by picking it in the Sell tab), all its current listings become today's price for it, and the deal list
   updates. You don't need a full scan for one item.
-- **Each auction house is its own market.** Prices from the Horde, Alliance and Neutral AHs are kept apart,
+- **Each auction house is its own market, and so is each realm.** On WoW Forever every ruleset (PvE, PvP...)
+  is its own realm, so PvE and PvP characters never share prices, deals or the 15-minute scan cooldown.
+  Mob loot, recipes and vendor prices are shared by all your characters.
+- **Faction and neutral auction houses are separate too.** Prices from the Horde, Alliance and Neutral AHs are kept apart,
   and that separation is what makes arbitrage deals possible.
 - **Disenchant values** use the classic disenchanting tables (`src/Data/Disenchant.lua`). If WoW Forever changes
   them, that's the one file to edit.

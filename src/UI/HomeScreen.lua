@@ -105,7 +105,7 @@ function HomeScreen:Render()
     end
   end
 
-  local deals = app.db.lastDeals or {}
+  local deals = app:lastDeals()
   if #deals > 0 then
     heading("Best deals from your last scan")
     for _, d in ipairs(deals) do

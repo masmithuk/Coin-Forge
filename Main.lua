@@ -188,7 +188,9 @@ on("ADDON_LOADED", function(name)
 end)
 
 on("AUCTION_HOUSE_SHOW", function()
-  -- recalculate restored deals with this character's current skills and recipes
+  -- the deals of the auction house you're at (faction, neutral, or another realm),
+  -- recalculated with this character's current skills and recipes
+  app:ensureMarket()
   if app.scanner.lastResult then app:findOpportunities() end
   panel:Show(AuctionHouseFrame)
 end)

@@ -41,7 +41,7 @@ describe("App", function()
 
   local function scan(listings)
     replicate = listings
-    app.scanner.state.lastStart = nil
+    app.scanner:resetCooldowns()
     assert.is_true((app:startScan()))
     app.scanner:onEvent("REPLICATE_ITEM_LIST_UPDATE")
   end
@@ -63,7 +63,8 @@ describe("App", function()
     assert.is_true(#deals >= 1)
     assert.equal("flip", deals[1].kind)
     assert.equal(4306, deals[1].itemID)
-    assert.is_table(saved.lastDeals)
+    assert.is_table(app:lastDeals())
+    assert.is_true(#app:lastDeals() > 0)
   end)
 
   it("values crafts from recorded recipes", function()
@@ -303,6 +304,62 @@ describe("App", function()
     end)
   end)
 
+  describe("separate auction houses (PvE / PvP realms, faction / neutral)", function()
+    local realm
+    before_each(function()
+      realm = "CAMWOW EU4 Realm 3 PvE"
+      _G.GetRealmName = function() return realm end
+      for day = 1, 3 do
+        now = (50 + day) * 86400
+        scan({ { itemID = 4306, count = 20, buyout = 20 * 1000 } })
+      end
+      scan({ { itemID = 4306, count = 10, buyout = 10 * 200 }, { itemID = 4306, count = 20, buyout = 20 * 1000 } })
+      assert.is_true(#app.lastOpportunities > 0)
+    end)
+
+    it("doesn't show one realm's deals on another", function()
+      realm = "CAMWOW EU4 Realm 1 PvP"
+      app:ensureMarket()
+      assert.is_nil(app.scanner.lastResult)
+      assert.same({}, app.lastOpportunities)
+      assert.same({}, app:lastDeals())
+    end)
+
+    it("lets a character on another realm scan straight away", function()
+      realm = "CAMWOW EU4 Realm 1 PvP"
+      assert.equal(0, app.scanner:cooldownLeft((app:market())))
+      assert.is_true((app:startScan()))
+    end)
+
+    it("brings each realm's deals back when you return to it, even after a /reload", function()
+      realm = "CAMWOW EU4 Realm 1 PvP"
+      app:ensureMarket()
+      realm = "CAMWOW EU4 Realm 3 PvE"
+      local reloaded = ns.App.new(saved, function() return now end)
+      assert.equal("flip", reloaded.lastOpportunities[1].kind)
+      assert.equal("CAMWOW EU4 Realm 3 PvE|Horde", reloaded.scanner.lastResult.marketKey)
+      assert.is_true(#reloaded:lastDeals() > 0)
+    end)
+
+    it("keeps the faction and neutral auction houses apart too", function()
+      _G.GetSubZoneText = function() return "Booty Bay" end
+      app:ensureMarket()
+      assert.same({}, app.lastOpportunities)
+      _G.GetSubZoneText = function() return "" end
+      app:ensureMarket()
+      assert.is_true(#app.lastOpportunities > 0)
+    end)
+  end)
+
+  it("moves listings saved by older versions under their auction house", function()
+    saved.lastListings = { marketKey = "Forever|Horde", time = now, items = { [4306] = "100:5" } }
+    saved.lastDeals = { { kind = "flip", itemID = 4306, profit = 1 } }
+    local migrated = ns.App.new(saved, function() return now end)
+    assert.is_nil(saved.lastListings)
+    assert.is_table(saved.listings["Forever|Horde"])
+    assert.equal(100, migrated.scanner.lastResult.listings[4306][1].price)
+  end)
+
   describe("after a /reload", function()
     it("restores the last scan's listings, so deals come back without a new scan", function()
       for day = 1, 3 do
@@ -318,7 +375,7 @@ describe("App", function()
       assert.equal(200, reloaded.scanner.lastResult.listings[4306][1].price)
       assert.equal("flip", reloaded.lastOpportunities[1].kind)
       -- and the scan cooldown is still respected
-      assert.is_true(reloaded.scanner:cooldownLeft() > 0)
+      assert.is_true(reloaded.scanner:cooldownLeft((reloaded:market())) > 0)
     end)
 
     it("keeps live search updates too", function()

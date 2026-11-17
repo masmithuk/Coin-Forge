@@ -294,7 +294,7 @@ function AuctionPanel:UpdateStatus(done, total)
     self.status:SetText(text)
   end
 
-  local wait = app.scanner:cooldownLeft()
+  local wait = app.scanner:cooldownLeft(key)
   local busy = app.scanner.running
   if busy then
     self.scanButton:SetText("Scanning")
@@ -309,7 +309,7 @@ function AuctionPanel:UpdateStatus(done, total)
   if (busy or wait > 0) and not self.ticker and C_Timer and C_Timer.NewTicker then
     self.ticker = C_Timer.NewTicker(1, function()
       self:UpdateStatus()
-      if not app.scanner.running and app.scanner:cooldownLeft() == 0 and self.ticker then
+      if not app.scanner.running and app.scanner:cooldownLeft((app:market())) == 0 and self.ticker then
         self.ticker:Cancel()
         self.ticker = nil
       end
@@ -323,7 +323,7 @@ function AuctionPanel:EmptyText()
   return PM.emptyText({
     running = app.scanner.running,
     hasResult = result ~= nil and result.marketKey == (app:market()),
-    cooldown = app.scanner:cooldownLeft(),
+    cooldown = app.scanner:cooldownLeft((app:market())),
     onlyCanDo = self.onlyCanDo,
     minHistoryDays = app.settings.minHistoryDays,
   })

@@ -18,6 +18,14 @@ function App.new(saved, clock)
   saved.settings = ns.Settings.apply(saved.settings)
   saved.vendorPrices = saved.vendorPrices or {}
   saved.vendorItems = saved.vendorItems or {}
+  -- Per auction house (realm|faction or realm|Neutral): on WoW Forever each
+  -- ruleset (PvE, PvP...) is its own realm, so characters never share these.
+  saved.listings = saved.listings or {}
+  if saved.lastListings then -- older versions kept one copy for the whole account
+    if saved.lastListings.marketKey then saved.listings[saved.lastListings.marketKey] = saved.lastListings end
+    saved.lastListings = nil
+  end
+  if type(saved.lastDeals) ~= "table" or saved.lastDeals[1] then saved.lastDeals = {} end
   saved.ui = saved.ui or {}
   saved.recipes = saved.recipes or {}
 
@@ -48,13 +56,31 @@ end
 
 App.LISTINGS_MAX_AGE = 86400
 
---- After a /reload: bring back the last scan's listings (if under a day old)
---- and the deals found in them, so you don't have to wait out the scan cooldown.
+--- Loads the saved listings of the auction house you're at (if under a day
+--- old) and the deals in them, so a /reload or a change of AH doesn't mean
+--- waiting out the scan cooldown. Clears them if that AH has none.
 function App:restoreListings()
-  local result = ns.ListingStore.load(self.db.lastListings)
-  if not result or not result.time or self.clock() - result.time > App.LISTINGS_MAX_AGE then return end
+  local key = self:market()
+  local result = ns.ListingStore.load(self.db.listings[key])
+  if not result or not result.time or self.clock() - result.time > App.LISTINGS_MAX_AGE then
+    self.scanner.lastResult = nil
+    self.lastOpportunities = {}
+    return
+  end
   self.scanner.lastResult = result
   self:findOpportunities(result)
+end
+
+--- Call when you might be at a different auction house (opening the AH):
+--- swaps in that AH's listings and deals if they aren't the ones loaded.
+function App:ensureMarket()
+  local result = self.scanner.lastResult
+  if not result or result.marketKey ~= (self:market()) then self:restoreListings() end
+end
+
+--- The top deals from the last scan of the auction house you're at (home screen).
+function App:lastDeals()
+  return self.db.lastDeals[(self:market())] or {}
 end
 
 -- Markets --------------------------------------------------------------------
@@ -222,14 +248,14 @@ function App:findOpportunities(result)
     local d = deals[i]
     top[i] = { kind = d.kind, itemID = d.itemID, profit = d.profit, name = d.name, note = d.note }
   end
-  self.db.lastDeals = top
+  self.db.lastDeals[result and result.marketKey or self:market()] = top
   self.events:emit("opportunitiesUpdated", deals)
   return deals
 end
 
 function App:onScanComplete(result)
   self.prices:prune(self.settings.historyDays)
-  self.db.lastListings = ns.ListingStore.save(result, self.clock())
+  self.db.listings[result.marketKey] = ns.ListingStore.save(result, self.clock())
   -- Vendor and disenchant deals need item details the client loads lazily.
   -- Ask for them now; onItemInfoReceived re-runs the finders as they arrive.
   if C_Item and C_Item.RequestLoadItemDataByID then
@@ -270,9 +296,7 @@ function App:recordLive(itemID, listings)
   local result = self.scanner.lastResult
   if result and result.marketKey == key then
     result.listings[itemID] = recorded -- nil when nothing is listed any more
-    if self.db.lastListings and self.db.lastListings.marketKey == key then
-      ns.ListingStore.setItem(self.db.lastListings, itemID, recorded)
-    end
+    if self.db.listings[key] then ns.ListingStore.setItem(self.db.listings[key], itemID, recorded) end
   end
   self.events:emit("pricesUpdated", itemID)
 end

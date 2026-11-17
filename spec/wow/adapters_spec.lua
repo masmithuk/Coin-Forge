@@ -121,6 +121,31 @@ describe("WoW adapters", function()
       assert.is_true((scanner:start("Forever|Horde")))
     end)
 
+    it("keeps a separate cooldown for each realm (PvE and PvP rulesets)", function()
+      local scanner = ns.Scanner.new(prices, events, db)
+      local PVE, PVP = "CAMWOW EU4 Realm 3 PvE|Alliance", "CAMWOW EU4 Realm 1 PvP|Horde"
+      assert.is_true((scanner:start(PVE)))
+      scanner:onEvent("REPLICATE_ITEM_LIST_UPDATE")
+      assert.equal(0, scanner:cooldownLeft(PVP))
+      assert.is_true((scanner:start(PVP)))
+      scanner:onEvent("REPLICATE_ITEM_LIST_UPDATE")
+      assert.is_false((scanner:start(PVE)))
+      assert.equal(900, scanner:cooldownLeft(PVE))
+    end)
+
+    it("shares the cooldown between a realm's faction and neutral auction houses", function()
+      local scanner = ns.Scanner.new(prices, events, db)
+      scanner:start("Forever|Horde")
+      scanner:onEvent("REPLICATE_ITEM_LIST_UPDATE")
+      assert.is_false((scanner:start("Forever|Neutral")))
+    end)
+
+    it("drops the old account-wide cooldown", function()
+      db.scanner = { lastStart = now }
+      local scanner = ns.Scanner.new(prices, events, db)
+      assert.is_true((scanner:start("Forever|Horde")))
+    end)
+
     it("ignores the update event when no scan is running", function()
       local scanner = ns.Scanner.new(prices, events, db)
       scanner:onEvent("REPLICATE_ITEM_LIST_UPDATE")

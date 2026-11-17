@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.1 (2026-11-17)
+
+- Fixed: the 15-minute scan cooldown was shared by every character on the account, so scanning on a PvE
+  character locked Scan on your PvP characters. It's now per realm (each WoW Forever ruleset is its own
+  realm).
+- Fixed: the last scan's listings and the home screen's best deals were shared too, so a PvP character could
+  be shown the PvE auction house's deals (and the neutral AH showed the faction AH's). They're now kept per
+  auction house and swapped in when you open a different one.
+- Mob loot, recipes and vendor prices stay shared by all your characters, since they're the same everywhere.
+
 ## 0.5.0 (2026-11-17)
 
 - Item tooltips show **Turn into**: everything the item can be crafted or converted into with a single
