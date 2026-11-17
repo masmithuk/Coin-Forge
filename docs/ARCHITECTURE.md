@@ -43,6 +43,7 @@ tested without the game, and the parts that touch the game stay small.
 | `Disenchant` | Outcome, expected value and skill needed, from `Data/Disenchant` |
 | `Conversions` | Essence combine/split definitions and evaluation |
 | `Crafting` | Recipe cost, revenue, profit, margin |
+| `Refining` | Single-ingredient recipes and conversions an item can become, valued per input item |
 | `Appraisal` | Auction / vendor / disenchant value of an item and the best action |
 | `LootDB` | Kills, coin and drops per NPC; expected value per kill |
 | `Opportunities` | Deal finders over current listings (see below) |

@@ -157,6 +157,20 @@ function App:disenchantEstimate(itemID)
   }
 end
 
+--- What an item can be crafted or converted into with a single ingredient
+--- (smelting ore, cloth into bandages, essences...), valued at today's prices
+--- after the AH cut. Uses recipes learned by any of your characters.
+--- @return nil if there's nothing, else Refining.evaluate's result
+function App:refining(itemID)
+  local options = ns.Refining.optionsFor(itemID, self:recipes(), ns.Conversions.all())
+  if #options == 0 then return nil end
+  local key, neutral = self:market()
+  return ns.Refining.evaluate(itemID, options, {
+    price = function(id) return self:currentPrice(id, key) end,
+    net = function(gross) return ns.Fees.net(gross, neutral) end,
+  })
+end
+
 --- Best value of one item (auction, vendor or disenchant), 0 if unknown.
 function App:valueOf(itemID)
   return self:appraisal():value(itemID)
@@ -293,18 +307,25 @@ function App:suggest(item, listings)
   end
   local info = ns.ItemInfo.get(item.itemID)
   local de = self:disenchantEstimate(item.itemID)
+  -- the best thing this character can turn it into (options are sorted best first)
+  local refine
+  for _, o in ipairs((self:refining(item.itemID) or { options = {} }).options) do
+    if o.knownByPlayer and o.valueEach then refine = o break end
+  end
   return ns.SellPricing.suggest({
     listings = listings,
     value = self:value(item.itemID, key),
     historyDays = self:history(item.itemID, key),
     vendorSell = info and info.sellPrice or 0,
     disenchantValue = de and de.canDo and de.value > 0 and de.value or nil,
+    refineValue = refine and refine.valueEach or nil,
+    refineName = refine and (ns.ItemInfo.name(refine.outputItemID) or refine.name) or nil,
     cutRate = ns.Fees.cutRate(neutral),
     settings = self.settings,
   })
 end
 
-local ACTION_ORDER = { post = 1, disenchant = 2, vendor = 3, manual = 4 }
+local ACTION_ORDER = { post = 1, refine = 2, disenchant = 3, vendor = 4, manual = 5 }
 
 --- Everything in your bags that can go on the AH, with a suggested price,
 --- most valuable first.

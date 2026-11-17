@@ -193,6 +193,42 @@ describe("App", function()
     end)
   end)
 
+  describe("turn into", function()
+    local ORE, BAR = 2771, 3576
+    before_each(function()
+      saved.recipes = { ["Mining:3576"] = {
+        key = "Mining:3576", name = "Smelt Tin", profession = "Mining", outputItemID = BAR, outputQty = 1,
+        reagents = { { itemID = ORE, qty = 1 } }, crafters = { [app.charKey] = true },
+      } }
+      for day = 1, 2 do
+        now = (50 + day) * 86400
+        scan({ { itemID = ORE, count = 5, buyout = 5 * 100 }, { itemID = BAR, count = 5, buyout = 5 * 300 } })
+      end
+    end)
+
+    it("values smelting the ore at today's prices, after the cut", function()
+      local r = app:refining(ORE)
+      assert.equal(95, r.asIs)
+      assert.equal("Smelt Tin", r.options[1].name)
+      assert.equal(285, r.options[1].valueEach)
+      assert.equal(190, r.options[1].gain)
+    end)
+
+    it("recommends smelting in the Sell tab when this character knows how", function()
+      assert.equal("refine", app:suggest({ itemID = ORE, key = "ore", postable = 5 }).action)
+    end)
+
+    it("doesn't recommend it when only another character knows the recipe", function()
+      saved.recipes["Mining:3576"].crafters = { ["Alt-Shammy"] = true }
+      assert.equal("post", app:suggest({ itemID = ORE, key = "ore", postable = 5 }).action)
+      assert.equal(1, #app:refining(ORE).options) -- the tooltip still shows it, with the alt's name
+    end)
+
+    it("returns nil for items that can't be turned into anything", function()
+      assert.is_nil(app:refining(4306))
+    end)
+  end)
+
   describe("disenchant estimate", function()
     local GREEN_CHEST = 5000
     before_each(function()

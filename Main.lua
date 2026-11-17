@@ -148,6 +148,7 @@ local function start()
       options = function(id) return app:appraisal():options(id) end,
       best = function(id) return app:appraisal():best(id) end,
       disenchant = function(id) return app:disenchantEstimate(id) end,
+      refining = function(id) return app:refining(id) end,
       nameOf = ns.ItemInfo.name,
     },
     unit = {

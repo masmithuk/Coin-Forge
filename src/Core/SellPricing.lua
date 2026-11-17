@@ -15,8 +15,9 @@
 --      price war).
 --   5. If what you'd get after the AH cut is no better than a vendor pays,
 --      recommend vendoring instead.
---   6. If you can disenchant it and the materials are worth more than both,
---      recommend disenchanting (the posting price is still filled in).
+--   6. If disenchanting it, or crafting it into something else first (smelting
+--      ore, say), is worth more than both, recommend the better of those (the
+--      posting price is still filled in).
 local _, ns = ...
 
 local SellPricing = {}
@@ -35,8 +36,10 @@ end
 ---   vendorSell   what a vendor pays per unit (0 if it can't be vendored)
 ---   cutRate      AH cut (0.05 / 0.15)
 ---   disenchantValue  net value of disenchanting one, or nil if you can't
+---   refineValue, refineName  net value per item of the best thing you can craft or
+---                convert it into, and that item's name (nil if nothing)
 ---   settings     { undercut, sellFloor, baitShare, minHistoryDays } }
---- @return { action = "post"|"vendor"|"disenchant"|"manual", price, net, reason,
+--- @return { action = "post"|"vendor"|"disenchant"|"refine"|"manual", price, net, reason,
 ---           competitor, reference, ignored = { qty, count } }
 function SellPricing.suggest(input)
   local s = input.settings
@@ -47,7 +50,7 @@ function SellPricing.suggest(input)
   if not reference then
     local result = { action = "manual", reason = "No price data yet. Scan the AH or set a price yourself.",
       ignored = { qty = 0, count = 0 }, listings = {} }
-    return SellPricing.compareDisenchant(result, input)
+    return SellPricing.compareAlternatives(result, input)
   end
 
   local floor = reference * s.sellFloor
@@ -116,23 +119,40 @@ function SellPricing.suggest(input)
     result.reason = ("A vendor pays %s, more than the %s you'd get here after the cut. Sell it to a vendor.")
       :format(ns.Money.short(input.vendorSell), ns.Money.short(net))
   end
-  return SellPricing.compareDisenchant(result, input)
+  return SellPricing.compareAlternatives(result, input)
 end
 
---- Switches the advice to "disenchant" when the materials are worth more than
---- both posting (after the cut) and vendoring.
-function SellPricing.compareDisenchant(result, input)
-  local de = input.disenchantValue
-  if not de or de <= 0 then return result end
+--- Switches the advice when doing something else with the item first is worth
+--- more than both posting it (after the cut) and vendoring it:
+---   "disenchant" - break it into enchanting materials
+---   "refine"     - craft or convert it into a better item (e.g. smelt ore into bars)
+--- The better of the two wins. The posting price stays filled in either way.
+function SellPricing.compareAlternatives(result, input)
   local postNet = result.net or 0
   local vendor = input.vendorSell or 0
-  if de > postNet and de > vendor then
-    result.action = "disenchant"
-    local alternatives = {}
-    if result.net then alternatives[#alternatives + 1] = "posting gets " .. ns.Money.short(postNet) end
-    if vendor > 0 then alternatives[#alternatives + 1] = "a vendor pays " .. ns.Money.short(vendor) end
+  local best, bestValue
+  for _, alt in ipairs({
+    { action = "disenchant", value = input.disenchantValue },
+    { action = "refine", value = input.refineValue },
+  }) do
+    if alt.value and alt.value > 0 and alt.value > postNet and alt.value > vendor
+      and (not bestValue or alt.value > bestValue) then
+      best, bestValue = alt.action, alt.value
+    end
+  end
+  if not best then return result end
+
+  local others = {}
+  if result.net then others[#others + 1] = "posting gets " .. ns.Money.short(postNet) end
+  if vendor > 0 then others[#others + 1] = "a vendor pays " .. ns.Money.short(vendor) end
+  local versus = #others > 0 and (", while " .. table.concat(others, " and ")) or ""
+  result.action = best
+  if best == "disenchant" then
     result.reason = ("Disenchant it: the materials are worth about %s after the cut%s.")
-      :format(ns.Money.short(de), #alternatives > 0 and (", while " .. table.concat(alternatives, " and ")) or "")
+      :format(ns.Money.short(bestValue), versus)
+  else
+    result.reason = ("Make %s first: worth about %s per item after the cut%s.")
+      :format(input.refineName or "the better item", ns.Money.short(bestValue), versus)
   end
   return result
 end

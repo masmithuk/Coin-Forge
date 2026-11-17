@@ -421,6 +421,45 @@ describe("WoW adapters", function()
       assert.is_true(found)
     end)
 
+    describe("turn into", function()
+      local names = { [3576] = "Tin Bar", [2581] = "Heavy Linen Bandage" }
+      local function lines(result)
+        local out = {}
+        ns.Tooltip.refineLines(out, result, function(id) return names[id] end)
+        return out
+      end
+
+      it("lists what the item can become, per item, with the gain over selling it", function()
+        local out = lines({ asIs = 95, options = {
+          { name = "Smelt Tin", outputItemID = 3576, inQty = 1, outQty = 1, valueEach = 190, gain = 95,
+            knownByPlayer = true },
+          { name = "Heavy Linen Bandage", outputItemID = 2581, inQty = 2, outQty = 1, valueEach = 38, gain = -57,
+            knownByPlayer = false, crafters = { "Alt-Shammy" } },
+        } })
+        assert.same({ "Turn into", "" }, { out[1][1], out[1][2] })
+        assert.equal("  Tin Bar", out[2][1])
+        assert.equal("1s 90c each (+95c)", out[2][2])
+        assert.same({ 0.35, 0.9, 0.4 }, out[2][3]) -- better: green
+        assert.equal("  Heavy Linen Bandage (2 to 1, Alt-Shammy)", out[3][1])
+        assert.equal("38c each (-57c)", out[3][2])
+        assert.same({ 0.95, 0.35, 0.35 }, out[3][3]) -- worse: red
+      end)
+
+      it("says when the result has no price yet", function()
+        local out = lines({ options = { { name = "Smelt Tin", outputItemID = 3576, inQty = 1, outQty = 1,
+          knownByPlayer = true } } })
+        assert.equal("no price yet", out[2][2])
+      end)
+
+      it("shows at most three options and nothing when there are none", function()
+        local many = {}
+        for i = 1, 5 do many[i] = { name = "R" .. i, outputItemID = i, inQty = 1, outQty = 1, valueEach = 10 } end
+        assert.equal(4, #lines({ options = many })) -- heading + 3
+        assert.same({}, lines({ options = {} }))
+        assert.same({}, lines(nil))
+      end)
+    end)
+
     describe("disenchant estimate", function()
       local function lines(estimate)
         return ns.Tooltip.itemLines(1, 1, {

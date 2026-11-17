@@ -84,6 +84,39 @@ describe("SellPricing", function()
     assert.matches("vendor", s.reason)
   end)
 
+  describe("turning it into something else first", function()
+    local function withRefine(o)
+      return SP.suggest({
+        listings = o.listings or {}, value = o.value, historyDays = 5, vendorSell = o.vendorSell or 0,
+        disenchantValue = o.disenchantValue, refineValue = o.refineValue, refineName = o.refineName,
+        cutRate = 0.05, settings = settings,
+      })
+    end
+
+    it("recommends making the better item when it beats everything else", function()
+      local s = withRefine({ value = 100, listings = { L(100, 5) }, refineValue = 190, refineName = "Tin Bar" })
+      assert.equal("refine", s.action)
+      assert.matches("Tin Bar", s.reason)
+      assert.matches("1s 90c", s.reason)
+      assert.matches("94c", s.reason) -- posting the ore: 99 * 0.95
+      assert.equal(99, s.price) -- the posting price is still filled in
+    end)
+
+    it("keeps posting when that pays more", function()
+      assert.equal("post", withRefine({ value = 100, listings = { L(100, 5) }, refineValue = 50,
+        refineName = "Tin Bar" }).action)
+    end)
+
+    it("prefers whichever of disenchanting and refining pays more", function()
+      local s = withRefine({ value = 100, listings = { L(100, 5) }, refineValue = 300, refineName = "Tin Bar",
+        disenchantValue = 500 })
+      assert.equal("disenchant", s.action)
+      s = withRefine({ value = 100, listings = { L(100, 5) }, refineValue = 600, refineName = "Tin Bar",
+        disenchantValue = 500 })
+      assert.equal("refine", s.action)
+    end)
+  end)
+
   describe("disenchanting", function()
     it("recommends disenchanting when it beats posting and vendoring", function()
       local s = suggest({ value = 1000, listings = { L(1000, 5) }, vendorSell = 100, disenchantValue = 2000 })

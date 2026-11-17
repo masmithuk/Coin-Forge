@@ -19,7 +19,7 @@ name; the slash command is now `/cforge`.*
 | **Conversions** | Every essence combine (3 lesser → 1 greater) and split (1 greater → 3 lesser), with live profit or loss. No profession needed. |
 | **Out in the world** | A coin and value over nameplates of mobs worth farming, plus "loot per kill" and best drops in the mob's tooltip. |
 | **Vendors** | Items a vendor sells for less than the AH pays glow green, with the profit shown underneath. |
-| **Item tooltips** | AH value, lowest listing, vendor price and the **best thing to do** with the item. Characters with Enchanting also see a disenchant estimate with the likely materials at their latest AH price (from your last scan or search), and the skill needed if yours is too low. |
+| **Item tooltips** | AH value, lowest listing, vendor price and the **best thing to do** with the item. **Turn into** shows what it can be crafted or converted into with a single ingredient (ore into bars, cloth into bandages, essences), valued per item, with the gain or loss in green or red. Characters with Enchanting also see a disenchant estimate with the likely materials at their latest AH price (from your last scan or search), and the skill needed if yours is too low. |
 | **Home screen** | Opened from the minimap coin or `/cforge`: status, a getting-started checklist, best deals, best mobs, gold per hour and a short guide. |
 
 Coin Forge never buys, posts or clicks for you. Every purchase goes through Blizzard's own UI.
@@ -111,6 +111,7 @@ Open the **Sell** tab on the Coin Forge panel at any auction house.
 | Nobody else selling | Posts at the item's normal market value |
 | The AH pays less than a vendor after the cut | Recommends vendoring instead |
 | You can disenchant it and the materials are worth more than posting or vendoring | Recommends **Disenchant** (the posting price is still filled in if you'd rather post) |
+| You know a recipe that turns it into something worth more (e.g. smelting ore into bars) | Recommends **Craft first** and names the item to make |
 
 "Far under" means below `sellFloor` (60%) of the normal price. "A few" means at most `baitShare` (20%)
 of the units listed. Gear is posted buyout-only, so nobody can win it with a low starting bid.

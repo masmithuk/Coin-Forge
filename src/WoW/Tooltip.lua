@@ -28,11 +28,42 @@ function Tooltip.itemLines(itemID, count, deps)
   local options = deps.options(itemID)
   if options.vendor then lines[#lines + 1] = { "Vendor", amount(options.vendor, count) } end
   Tooltip.disenchantLines(lines, deps.disenchant and deps.disenchant(itemID), deps.nameOf)
+  Tooltip.refineLines(lines, deps.refining and deps.refining(itemID), deps.nameOf)
   local action, value = deps.best(itemID)
   if action and #lines > 1 then
     lines[#lines + 1] = { "Best: " .. ACTION_LABELS[action], ns.Money.short(value) }
   end
   return lines
+end
+
+local BETTER, WORSE, UNKNOWN = { 0.35, 0.9, 0.4 }, { 0.95, 0.35, 0.35 }, { 0.6, 0.6, 0.65 }
+local MAX_REFINE_LINES = 3
+
+--- Appends "Turn into": what the item can be crafted or converted into (see
+--- App:refining), valued per item you start with, after the AH cut, with the
+--- gain or loss against selling it as it is. Green is better, red is worse.
+function Tooltip.refineLines(lines, result, nameOf)
+  if not result or #result.options == 0 then return end
+  lines[#lines + 1] = { "Turn into", "" }
+  for i = 1, math.min(#result.options, MAX_REFINE_LINES) do
+    local o = result.options[i]
+    local notes = {}
+    if o.inQty ~= o.outQty then notes[#notes + 1] = o.inQty .. " to " .. o.outQty end
+    if not o.knownByPlayer and o.crafters and #o.crafters > 0 then
+      notes[#notes + 1] = table.concat(o.crafters, ", ")
+    end
+    local name = (nameOf and nameOf(o.outputItemID)) or o.name
+    local left = "  " .. name .. (#notes > 0 and (" (" .. table.concat(notes, ", ") .. ")") or "")
+    local right, color = "no price yet", UNKNOWN
+    if o.valueEach then
+      right = ns.Money.short(o.valueEach) .. " each"
+      if o.gain then
+        right = right .. (" (%s%s)"):format(o.gain >= 0 and "+" or "", ns.Money.short(o.gain))
+        color = o.gain > 0 and BETTER or WORSE
+      end
+    end
+    lines[#lines + 1] = { left, right, color }
+  end
 end
 
 --- Appends the disenchant estimate (see App:disenchantEstimate) and the
@@ -68,7 +99,10 @@ end
 local function addLines(tooltip, lines)
   if #lines == 0 then return end
   tooltip:AddLine("Coin Forge", 1, 0.82, 0)
-  for _, l in ipairs(lines) do tooltip:AddDoubleLine(l[1], l[2], 0.8, 0.8, 0.8, 1, 1, 1) end
+  for _, l in ipairs(lines) do
+    local c = l[3] or { 1, 1, 1 }
+    tooltip:AddDoubleLine(l[1], l[2], 0.8, 0.8, 0.8, c[1], c[2], c[3])
+  end
 end
 
 --- Hooks the game tooltips. `deps` holds item and unit dependencies plus settings.

@@ -3,9 +3,13 @@ name: Release
 # Push a tag like v0.4.0 (or v0.5.0-beta1) to test, package and publish:
 #   git tag v0.4.0 && git push origin v0.4.0
 #
+# If a step fails (e.g. a missing secret), fix it and use "Re-run jobs" on the run:
+# every step is safe to repeat.
+#
 # Needs, under Settings > Secrets and variables > Actions:
 #   secret   CF_API_KEY      a CurseForge API token
-#   variable CF_PROJECT_ID   the numeric id of the Coinwise CurseForge project
+#   variable CF_PROJECT_ID   the numeric id of the Coin Forge CurseForge project
+#                            (a secret of the same name works too)
 
 on:
   push:
@@ -42,11 +46,16 @@ jobs:
           scripts/changelog.sh > release-notes.md
           prerelease=""
           case "$GITHUB_REF_NAME" in *alpha*|*beta*) prerelease="--prerelease" ;; esac
-          gh release create "$GITHUB_REF_NAME" "${{ steps.package.outputs.zip }}" \
-            --title "Coinwise ${GITHUB_REF_NAME#v}" --notes-file release-notes.md $prerelease
+          # safe to re-run: reuse the release if an earlier run already created it
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "${{ steps.package.outputs.zip }}" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "${{ steps.package.outputs.zip }}" \
+              --title "Coin Forge ${GITHUB_REF_NAME#v}" --notes-file release-notes.md $prerelease
+          fi
 
       - name: Upload to CurseForge
         env:
           CF_API_KEY: ${{ secrets.CF_API_KEY }}
-          CF_PROJECT_ID: ${{ vars.CF_PROJECT_ID }}
+          CF_PROJECT_ID: ${{ vars.CF_PROJECT_ID || secrets.CF_PROJECT_ID }}
         run: scripts/upload-curseforge.sh "${{ steps.package.outputs.zip }}" "$GITHUB_REF_NAME"

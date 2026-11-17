@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0 (2026-11-17)
+
+- Item tooltips show **Turn into**: everything the item can be crafted or converted into with a single
+  ingredient (Tin Ore into Tin Bar, 2 Linen Cloth into a bandage, essence combining and splitting...),
+  valued per item you start with at today's prices after the AH cut. Green means better than selling it as
+  it is, red means worse. Recipes known only by another character show that character's name.
+- Sell tab: recommends **Craft first** when a recipe this character knows makes the item worth more than
+  posting, vendoring or disenchanting it, and says by how much.
+
 ## 0.4.0 (2026-11-16)
 
 First public release on CurseForge, for WoW Forever (1.60.1).
