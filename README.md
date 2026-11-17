@@ -17,10 +17,10 @@ name; the slash command is now `/cforge`.*
 | **Crafting** | Profit or loss of every recipe your characters have learned, at today's prices. Tick **Show unlearned** to also see recipes nobody has learned yet (usually ones above your skill) and whether they'd be worth learning. |
 | **Selling** | A Sell tab listing everything in your bags you can auction, most valuable first. Click one: price, quantity and duration are set up for you (all editable), then one click on **Post**. |
 | **Conversions** | Every essence combine (3 lesser → 1 greater) and split (1 greater → 3 lesser), with live profit or loss. No profession needed. |
-| **Out in the world** | A coin and value over nameplates of mobs worth farming, plus "loot per kill" and best drops in the mob's tooltip. |
+| **Out in the world** | A coin and value over nameplates of mobs worth farming, plus "loot per kill", "skinning per corpse" and best drops in the mob's tooltip. Veins and herbs show their value per gather and yields. |
 | **Vendors** | Items a vendor sells for less than the AH pays glow green, with the profit shown underneath. |
 | **Item tooltips** | AH value, lowest listing, vendor price and the **best thing to do** with the item. **Turn into** shows what it can be crafted or converted into with a single ingredient (ore into bars, cloth into bandages, essences), valued per item, with the gain or loss in green or red. Characters with Enchanting also see a disenchant estimate with the likely materials at their latest AH price (from your last scan or search), and the skill needed if yours is too low. |
-| **Home screen** | Opened from the minimap coin or `/cforge`: status, a getting-started checklist, best deals, best mobs, gold per hour and a short guide. |
+| **Home screen** | Opened from the minimap coin or `/cforge`: status, a getting-started checklist, best deals, best mobs, best nodes to gather, gold per hour and a short guide. |
 
 Coin Forge never buys, posts or clicks for you. Every purchase goes through Blizzard's own UI.
 
@@ -69,7 +69,9 @@ The minimap coin's tooltip and the home screen explain all of this in game as we
 - **Disenchant values** use the classic disenchanting tables (`src/Data/Disenchant.lua`). If WoW Forever changes
   them, that's the one file to edit.
 - **Mob values** are `(coin + Σ drops × best value) ÷ kills`, from your own loot across all your characters.
-  Skinning a corpse adds its leather to that mob without counting a second kill.
+  Skinning is kept separately per corpse skinned, and only added to a mob's value if you can skin.
+- **Node values** are `Σ yields × best value ÷ gathers` for each vein or herb, by name, learned from your
+  Mining and Herb Gathering casts.
 
 ## Deal types
 

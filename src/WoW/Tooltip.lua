@@ -83,16 +83,43 @@ function Tooltip.disenchantLines(lines, e, nameOf)
   end
 end
 
---- @param deps { expected(npcID) -> ev, kills; topDrops(npcID) ; nameOf(itemID) }
+-- "45%" for less than one per kill/gather, "x2.3" for more.
+local function rateText(per)
+  if per < 1 then return ("%d%%"):format(math.floor(per * 100 + 0.5)) end
+  return ("x%.1f"):format(per)
+end
+
+local function dropLines(lines, drops, per, nameOf)
+  for _, drop in ipairs(drops) do
+    lines[#lines + 1] = { "  " .. (nameOf(drop.itemID) or "?") .. " " .. rateText(drop[per]),
+      ns.Money.short(drop.value) }
+  end
+end
+
+--- @param deps { expected(npcID) -> ev, kills (loot only); topDrops(npcID); nameOf(itemID);
+---   skinning(npcID) -> { ev, count, canDo, drops } or nil (optional) }
 function Tooltip.unitLines(npcID, deps)
   local ev, kills = deps.expected(npcID)
   if not ev then return {} end
   local lines = { { "Loot per kill", ("%s (%d kills)"):format(ns.Money.short(ev), kills) } }
-  for _, drop in ipairs(deps.topDrops(npcID)) do
-    local rate = drop.perKill < 1 and ("%d%%"):format(math.floor(drop.perKill * 100 + 0.5))
-      or ("x%.1f"):format(drop.perKill)
-    lines[#lines + 1] = { "  " .. (deps.nameOf(drop.itemID) or "?") .. " " .. rate, ns.Money.short(drop.value) }
+  dropLines(lines, deps.topDrops(npcID), "perKill", deps.nameOf)
+  local skin = deps.skinning and deps.skinning(npcID)
+  if skin then
+    local label = skin.canDo and "Skinning per corpse" or "Skinning per corpse (needs Skinning)"
+    lines[#lines + 1] = { label, ("%s (%d skinned)"):format(ns.Money.short(skin.ev), skin.count) }
+    dropLines(lines, skin.drops or {}, "perKill", deps.nameOf)
   end
+  return lines
+end
+
+--- Lines for a gathering node (vein, herb) you've gathered before.
+--- @param deps { expected(name) -> ev, gathers; topDrops(name); nameOf(itemID) }
+function Tooltip.nodeLines(name, deps)
+  local ev, gathers = deps.expected(name)
+  if not ev then return {} end
+  local lines = { { "Per gather", ("%s (%d gather%s)"):format(ns.Money.short(ev), gathers,
+    gathers == 1 and "" or "s") } }
+  dropLines(lines, deps.topDrops(name), "perGather", deps.nameOf)
   return lines
 end
 
@@ -113,6 +140,24 @@ function Tooltip.install(deps)
   local function onUnit(tooltip, guid)
     local npcID = ns.GUID.npcID(guid)
     if deps.settings.showTooltips and npcID then addLines(tooltip, Tooltip.unitLines(npcID, deps.unit)) end
+  end
+
+  -- World objects (veins, herbs) have no item or unit: match them by the
+  -- tooltip's title against the nodes you've gathered.
+  if deps.node and GameTooltip and GameTooltip.HookScript then
+    GameTooltip:HookScript("OnShow", function(tooltip)
+      if not deps.settings.showTooltips or tooltip.coinForgeNode then return end
+      if tooltip:GetUnit() or tooltip:GetItem() then return end
+      local title = _G[(tooltip:GetName() or "GameTooltip") .. "TextLeft1"]
+      local name = title and title:GetText()
+      if not name then return end
+      local lines = Tooltip.nodeLines(name, deps.node)
+      if #lines == 0 then return end
+      tooltip.coinForgeNode = true
+      addLines(tooltip, lines)
+      tooltip:Show() -- resize to fit
+    end)
+    GameTooltip:HookScript("OnHide", function(tooltip) tooltip.coinForgeNode = nil end)
   end
 
   if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall and Enum and Enum.TooltipDataType then

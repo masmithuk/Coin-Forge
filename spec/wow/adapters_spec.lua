@@ -363,6 +363,107 @@ describe("WoW adapters", function()
       assert.equal(0, #taken)
     end)
 
+    describe("gathering", function()
+      local clock, spells
+      before_each(function()
+        clock = 1000
+        spells = { [2575] = "Mining", [2366] = "Herb Gathering", [8613] = "Skinning", [133] = "Fireball" }
+        _G.GetTime = function() return clock end
+        _G.C_Spell = { GetSpellName = function(id) return spells[id] end }
+      end)
+      after_each(function() _G.C_Spell = nil end)
+
+      local function newRecorder()
+        local loot, gather = ns.LootDB.new({}), ns.GatherDB.new({})
+        local taken = {}
+        local rec = ns.LootRecorder.new(loot, function(items) taken[#taken + 1] = items end, gather)
+        return rec, loot, gather, taken
+      end
+
+      it("records a mining node by the name of what you cast Mining on", function()
+        slots = { { type = 1, link = link(2770), sources = { "GameObject-0-1-0-1-1731-AAA", 2 } } }
+        local rec, loot, gather, taken = newRecorder()
+        rec:onEvent("UNIT_SPELLCAST_SENT", "player", "Copper Vein", "cast-1", 2575)
+        rec:onEvent("LOOT_OPENED")
+        rec:onEvent("LOOT_SLOT_CLEARED", 1)
+        local n = gather:get("Copper Vein")
+        assert.equal(1, n.gathers)
+        assert.equal("Mining", n.kind)
+        assert.same({ [2770] = 2 }, n.drops)
+        assert.same({}, loot.db.mobs)
+        assert.same({ { itemID = 2770, qty = 2 } }, taken[1]) -- counts towards the session
+      end)
+
+      it("records herbs as Herbalism", function()
+        slots = { { type = 1, link = link(2447), sources = { "GameObject-0-1-0-1-1617-BBB", 1 } } }
+        local rec, _, gather = newRecorder()
+        rec:onEvent("UNIT_SPELLCAST_SENT", "player", "Peacebloom", "cast-2", 2366)
+        rec:onEvent("LOOT_OPENED")
+        assert.equal("Herbalism", gather:get("Peacebloom").kind)
+      end)
+
+      it("puts loot from skinning a corpse into the mob's skinning stats", function()
+        slots = { { type = 1, link = link(2318), sources = { "Creature-0-1-0-1-500-AAA", 1 } } }
+        local rec, loot = newRecorder()
+        rec:onEvent("LOOT_OPENED") -- the kill
+        rec:onEvent("LOOT_CLOSED")
+        rec:onEvent("UNIT_SPELLCAST_SENT", "player", "Plainstrider", "cast-3", 8613)
+        rec:onEvent("LOOT_OPENED") -- the skinning
+        rec:onEvent("LOOT_SLOT_CLEARED", 1)
+        local m = loot:get(500)
+        assert.equal(1, m.kills)
+        assert.same({}, m.drops)
+        assert.same({ [2318] = 1 }, m.skins.drops)
+      end)
+
+      it("ignores loot from objects that weren't gathered (chests, quest objects)", function()
+        slots = { { type = 1, link = link(1), sources = { "GameObject-0-1-0-1-99-CCC", 1 } } }
+        local rec, _, gather = newRecorder()
+        rec:onEvent("UNIT_SPELLCAST_SENT", "player", "Ogre", "cast-4", 133) -- not a gathering spell
+        rec:onEvent("LOOT_OPENED")
+        rec:onEvent("LOOT_SLOT_CLEARED", 1)
+        assert.same({}, gather.db.nodes)
+      end)
+
+      it("forgets a gathering cast after a few seconds", function()
+        slots = { { type = 1, link = link(2770), sources = { "GameObject-0-1-0-1-1731-DDD", 1 } } }
+        local rec, _, gather = newRecorder()
+        rec:onEvent("UNIT_SPELLCAST_SENT", "player", "Copper Vein", "cast-5", 2575)
+        clock = clock + 60
+        rec:onEvent("LOOT_OPENED")
+        assert.same({}, gather.db.nodes)
+      end)
+
+      it("forgets a gathering cast that was interrupted", function()
+        slots = { { type = 1, link = link(2318), sources = { "Creature-0-1-0-1-500-AAA", 1 } } }
+        local rec, loot = newRecorder()
+        rec:onEvent("UNIT_SPELLCAST_SENT", "player", "Plainstrider", "cast-7", 8613)
+        rec:onEvent("UNIT_SPELLCAST_INTERRUPTED", "player", "cast-7", 8613)
+        rec:onEvent("LOOT_OPENED") -- looting a corpse normally
+        rec:onEvent("LOOT_SLOT_CLEARED", 1)
+        assert.same({ [2318] = 1 }, loot:get(500).drops)
+        assert.is_nil(loot:get(500).skins)
+      end)
+
+      it("only counts skinning on the corpse it was cast on", function()
+        slots = { { type = 1, link = link(2318), sources = { "Creature-0-1-0-1-500-AAA", 1 } } }
+        local rec, loot = newRecorder()
+        loot:setName(500, "Kobold Miner")
+        rec:onEvent("UNIT_SPELLCAST_SENT", "player", "Plainstrider", "cast-8", 8613)
+        rec:onEvent("LOOT_OPENED")
+        rec:onEvent("LOOT_SLOT_CLEARED", 1)
+        assert.is_nil(loot:get(500).skins)
+      end)
+
+      it("ignores spells cast by other units", function()
+        slots = { { type = 1, link = link(2770), sources = { "GameObject-0-1-0-1-1731-EEE", 1 } } }
+        local rec, _, gather = newRecorder()
+        rec:onEvent("UNIT_SPELLCAST_SENT", "pet", "Copper Vein", "cast-6", 2575)
+        rec:onEvent("LOOT_OPENED")
+        assert.same({}, gather.db.nodes)
+      end)
+    end)
+
     it("reports looted items for the session tracker", function()
       local loot = ns.LootDB.new({})
       local taken
@@ -539,6 +640,60 @@ describe("WoW adapters", function()
       assert.matches("25s", lines[1][2])
       assert.matches("12 kills", lines[1][2])
       assert.matches("Runecloth", lines[2][1])
+    end)
+
+    it("shows skinning separately from the kill's loot", function()
+      local base = {
+        expected = function() return 2500, 12 end,
+        topDrops = function() return {} end,
+        nameOf = function(id) return ({ [2318] = "Light Leather" })[id] end,
+      }
+      base.skinning = function()
+        return { ev = 1500, count = 8, canDo = true, drops = { { itemID = 2318, perKill = 1.5, value = 1500 } } }
+      end
+      local lines = ns.Tooltip.unitLines(500, base)
+      assert.same({ "Skinning per corpse", "15s (8 skinned)" }, { lines[2][1], lines[2][2] })
+      assert.equal("  Light Leather x1.5", lines[3][1])
+
+      base.skinning = function() return { ev = 1500, count = 8, canDo = false, drops = {} } end
+      assert.equal("Skinning per corpse (needs Skinning)", ns.Tooltip.unitLines(500, base)[2][1])
+
+      base.skinning = function() return nil end
+      assert.equal(1, #ns.Tooltip.unitLines(500, base))
+    end)
+
+    it("shows a gathering node's value and yields", function()
+      local lines = ns.Tooltip.nodeLines("Copper Vein", {
+        expected = function() return 1800, 12 end,
+        topDrops = function() return { { itemID = 2770, perGather = 2.3, value = 1500 },
+          { itemID = 774, perGather = 0.06, value = 300 } } end,
+        nameOf = function(id) return ({ [2770] = "Copper Ore", [774] = "Malachite" })[id] end,
+      })
+      assert.same({ "Per gather", "18s (12 gathers)" }, lines[1])
+      assert.same({ "  Copper Ore x2.3", "15s" }, lines[2])
+      assert.same({ "  Malachite 6%", "3s" }, lines[3])
+      assert.same({}, ns.Tooltip.nodeLines("Nope", { expected = function() return nil end }))
+    end)
+
+    it("adds node lines to world object tooltips", function()
+      _G.GameTooltipTextLeft1 = require("helpers.wow_mock").frame(nil)
+      _G.GameTooltipTextLeft1.text = "Copper Vein"
+      ns.Tooltip.install({
+        settings = { showTooltips = true },
+        item = {}, unit = {},
+        node = {
+          expected = function(name) if name == "Copper Vein" then return 1800, 12 end end,
+          topDrops = function() return {} end,
+          nameOf = function() return nil end,
+        },
+      })
+      _G.GameTooltip:Fire("OnShow")
+      local added
+      for _, call in ipairs(_G.GameTooltip.calls) do
+        if call[1] == "AddDoubleLine" and call[2] == "Per gather" then added = call[3] end
+      end
+      assert.equal("18s (12 gathers)", added)
+      _G.GameTooltipTextLeft1 = nil
     end)
 
     it("returns no unit lines for unknown mobs", function()

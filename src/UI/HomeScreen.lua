@@ -5,6 +5,7 @@
 --   Get started    a checklist that ticks itself off, hidden once complete
 --   Best deals     top deals from your last scan
 --   Best mobs      most valuable mobs you've farmed
+--   Best to gather most valuable veins and herbs you've gathered
 --   This session   gold per hour
 --   What it does   one line per feature
 local _, ns = ...
@@ -93,7 +94,8 @@ function HomeScreen:Render()
 
   heading("Status")
   add(label .. ": " .. Home.scanStatus(state.lastScan, app.clock()))
-  add(("%d mobs learned, %d recipes recorded"):format(state.mobsLearned, state.recipesKnown), nil, C.muted)
+  add(("%d mobs learned, %d nodes gathered, %d recipes recorded"):format(state.mobsLearned,
+    state.nodesLearned or 0, state.recipesKnown), nil, C.muted)
 
   local steps = Home.checklist(state)
   local allDone = true
@@ -119,6 +121,14 @@ function HomeScreen:Render()
     heading("Best mobs to farm")
     for _, m in ipairs(mobs) do
       add(("%s  |cffffd100%s|r per kill  (%d kills)"):format(m.name or ("NPC " .. m.npcID), Money.short(m.ev), m.kills))
+    end
+  end
+
+  local nodes = app:topNodes(5)
+  if #nodes > 0 then
+    heading("Best to gather")
+    for _, n in ipairs(nodes) do
+      add(("%s  |cffffd100%s|r per gather  (%s, %d gathers)"):format(n.name, Money.short(n.ev), n.kind, n.gathers))
     end
   end
 

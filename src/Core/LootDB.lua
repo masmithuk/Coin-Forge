@@ -1,7 +1,12 @@
 -- LootDB: what each kind of mob drops, learned from your own looting.
 --
 -- Storage (SavedVariables, shared by all your characters):
---   db.mobs[npcID] = { name, kills, copper, drops = { [itemID] = totalQty } }
+--   db.mobs[npcID] = { name, kills, copper, drops = { [itemID] = totalQty },
+--                      skins = { count, drops = { [itemID] = totalQty } } }
+--
+-- Skinning loot is kept apart in `skins` (counted per corpse skinned), so
+-- "loot per kill" is what anyone gets and skinning is only added for
+-- characters who can skin.
 --
 -- A kill is counted once per mob GUID, so skinning or re-opening the same
 -- corpse adds its loot without inflating the kill count.
@@ -15,7 +20,7 @@ local SEEN_LIMIT = 500
 
 function LootDB.new(db)
   db.mobs = db.mobs or {}
-  return setmetatable({ db = db, seen = {}, seenOrder = {} }, LootDB)
+  return setmetatable({ db = db, seen = {}, seenOrder = {}, skinned = {}, skinnedOrder = {} }, LootDB)
 end
 
 local function mob(self, npcID)
@@ -27,13 +32,13 @@ local function mob(self, npcID)
   return m
 end
 
-local function markSeen(self, guid)
-  if self.seen[guid] then return false end
-  self.seen[guid] = true
-  local order = self.seenOrder
+local function markSeen(self, guid, seenKey, orderKey)
+  local seen, order = self[seenKey or "seen"], self[orderKey or "seenOrder"]
+  if seen[guid] then return false end
+  seen[guid] = true
   order[#order + 1] = guid
   if #order > SEEN_LIMIT then
-    self.seen[table.remove(order, 1)] = nil
+    seen[table.remove(order, 1)] = nil
   end
   return true
 end
@@ -45,8 +50,17 @@ end
 --- Records the loot taken from one corpse.
 --- @param items list of { itemID, qty }
 --- @param copper coin looted from it
-function LootDB:record(npcID, guid, items, copper)
+--- @param opts { skin = true } for loot from skinning the corpse
+function LootDB:record(npcID, guid, items, copper, opts)
   local m = mob(self, npcID)
+  if opts and opts.skin then
+    m.skins = m.skins or { count = 0, drops = {} }
+    if markSeen(self, guid, "skinned", "skinnedOrder") then m.skins.count = m.skins.count + 1 end
+    for _, item in ipairs(items or {}) do
+      m.skins.drops[item.itemID] = (m.skins.drops[item.itemID] or 0) + item.qty
+    end
+    return
+  end
   if markSeen(self, guid) then m.kills = m.kills + 1 end
   m.copper = m.copper + (copper or 0)
   for _, item in ipairs(items or {}) do
@@ -69,12 +83,40 @@ function LootDB:expectedValue(npcID, valueOf)
   return math.floor(total / m.kills), m.kills
 end
 
+--- Average copper value of skinning one corpse of this mob.
+--- @return ev, corpsesSkinned  or nil if never skinned
+function LootDB:skinValue(npcID, valueOf)
+  local m = self.db.mobs[npcID]
+  local skins = m and m.skins
+  if not skins or skins.count == 0 then return nil end
+  local total = 0
+  for itemID, qty in pairs(skins.drops) do total = total + qty * valueOf(itemID) end
+  return math.floor(total / skins.count), skins.count
+end
+
+--- A mob's skinning yields per corpse, most valuable first.
+function LootDB:topSkins(npcID, valueOf, limit)
+  local m = self.db.mobs[npcID]
+  local skins = m and m.skins
+  if not skins or skins.count == 0 then return {} end
+  local list = {}
+  for itemID, qty in pairs(skins.drops) do
+    local per = qty / skins.count
+    list[#list + 1] = { itemID = itemID, perKill = per, value = math.floor(per * valueOf(itemID)) }
+  end
+  table.sort(list, function(a, b) return a.value > b.value end)
+  while #list > limit do table.remove(list) end
+  return list
+end
+
 --- Most valuable mobs with at least minKills recorded.
-function LootDB:topMobs(valueOf, minKills, limit)
+--- @param opts { includeSkins = bool } (optional) add skinning value per kill
+function LootDB:topMobs(valueOf, minKills, limit, opts)
   local list = {}
   for npcID, m in pairs(self.db.mobs) do
     if m.kills >= minKills then
       local ev = self:expectedValue(npcID, valueOf)
+      if opts and opts.includeSkins then ev = ev + (self:skinValue(npcID, valueOf) or 0) end
       list[#list + 1] = { npcID = npcID, name = m.name, ev = ev, kills = m.kills }
     end
   end

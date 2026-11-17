@@ -392,6 +392,51 @@ describe("App", function()
     end)
   end)
 
+  describe("skinning and gathering", function()
+    local LEATHER, ORE = 2318, 2770
+    before_each(function()
+      for day = 1, 2 do
+        now = (50 + day) * 86400
+        scan({ { itemID = LEATHER, count = 1, buyout = 100 }, { itemID = ORE, count = 1, buyout = 40 } })
+      end
+      app.loot:record(77, "g1", {}, 200)
+      app.loot:record(77, "g1", { { itemID = LEATHER, qty = 2 } }, 0, { skin = true })
+    end)
+
+    it("adds skinning to a mob's value only for characters who can skin", function()
+      app.skills = {}
+      assert.equal(200, (app:mobValue(77)))
+      app.skills = { Skinning = 100 }
+      assert.equal(200 + 2 * 95, (app:mobValue(77)))
+    end)
+
+    it("keeps loot per kill and skinning apart for the tooltip", function()
+      app.skills = {}
+      assert.equal(200, (app:mobLootValue(77)))
+      local skin = app:mobSkinning(77)
+      assert.equal(190, skin.ev)
+      assert.equal(1, skin.count)
+      assert.is_false(skin.canDo)
+      assert.equal(LEATHER, skin.drops[1].itemID)
+      assert.is_nil(app:mobSkinning(999))
+    end)
+
+    it("ranks mobs including skinning when you can skin", function()
+      app.settings.mobMinKills = 1
+      app.skills = { Skinning = 1 }
+      assert.equal(390, app:topMobs(5)[1].ev)
+    end)
+
+    it("values gathering nodes and ranks the best ones", function()
+      for i = 1, 3 do app.gather:record("Copper Vein", "Mining", "n" .. i, { { itemID = ORE, qty = 2 } }) end
+      local ev, gathers = app:nodeValue("Copper Vein")
+      assert.equal(76, ev) -- 2 ore x 38c (after the 5% cut)
+      assert.equal(3, gathers)
+      assert.equal("Copper Vein", app:topNodes(5)[1].name)
+      assert.equal(1, app:homeState().nodesLearned)
+    end)
+  end)
+
   it("reports home screen state", function()
     local s = app:homeState()
     assert.is_false(s.scanned)

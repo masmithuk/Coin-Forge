@@ -13,3 +13,8 @@ function GUID.npcID(guid)
   if not NPC_TYPES[unitType] then return nil end
   return tonumber(npcID)
 end
+
+--- True for world objects such as mining veins, herbs and chests.
+function GUID.isObject(guid)
+  return type(guid) == "string" and guid:match("^GameObject%-") ~= nil
+end

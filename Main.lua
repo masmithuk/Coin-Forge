@@ -139,7 +139,7 @@ local function start()
   panel = ns.AuctionPanel.new(app)
   merchant = ns.MerchantOverlay.new(app)
   nameplates = ns.Nameplates.new({ settings = app.settings, valueOf = function(id) return app:mobValue(id) end })
-  lootRecorder = ns.LootRecorder.new(app.loot, function(items) app:onItemsLooted(items) end)
+  lootRecorder = ns.LootRecorder.new(app.loot, function(items) app:onItemsLooted(items) end, app.gather)
 
   ns.Tooltip.install({
     settings = app.settings,
@@ -152,10 +152,16 @@ local function start()
       nameOf = ns.ItemInfo.name,
     },
     unit = {
-      expected = function(npcID) return app:mobValue(npcID) end,
+      expected = function(npcID) return app:mobLootValue(npcID) end,
       topDrops = function(npcID)
         return app.loot:topDrops(npcID, function(id) return app:valueOf(id) end, 3)
       end,
+      skinning = function(npcID) return app:mobSkinning(npcID) end,
+      nameOf = ns.ItemInfo.name,
+    },
+    node = {
+      expected = function(name) return app:nodeValue(name) end,
+      topDrops = function(name) return app:nodeDrops(name) end,
       nameOf = ns.ItemInfo.name,
     },
   })
@@ -197,7 +203,8 @@ end)
 on("AUCTION_HOUSE_CLOSED", function() panel:Hide() end)
 on("REPLICATE_ITEM_LIST_UPDATE", function() app.scanner:onEvent("REPLICATE_ITEM_LIST_UPDATE") end)
 
-for _, e in ipairs({ "LOOT_OPENED", "LOOT_SLOT_CLEARED", "LOOT_CLOSED" }) do
+for _, e in ipairs({ "LOOT_OPENED", "LOOT_SLOT_CLEARED", "LOOT_CLOSED", "UNIT_SPELLCAST_SENT",
+  "UNIT_SPELLCAST_FAILED", "UNIT_SPELLCAST_FAILED_QUIET", "UNIT_SPELLCAST_INTERRUPTED" }) do
   on(e, function(...) lootRecorder:onEvent(e, ...) end)
 end
 for _, e in ipairs({ "NAME_PLATE_UNIT_ADDED", "NAME_PLATE_UNIT_REMOVED" }) do

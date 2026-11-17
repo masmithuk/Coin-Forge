@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.0 (2026-11-17)
+
+- **Gathering stats.** Mining veins and herbs you gather are learned like mobs: hover a node to see its
+  value **per gather** and what it yields (Copper Ore x2.3, Malachite 6%...). The home screen lists your
+  **Best to gather** nodes.
+- **Skinning per corpse** is now shown separately in mob tooltips, below the loot per kill. A mob's value
+  on nameplates and in Best mobs includes skinning only for characters who can skin.
+- Skinning is recognised from the Skinning cast itself, so it no longer depends on looting order; an
+  interrupted or failed cast is forgotten. Chests and quest objects you didn't gather are ignored.
+
 ## 0.5.1 (2026-11-17)
 
 - Fixed: the 15-minute scan cooldown was shared by every character on the account, so scanning on a PvE

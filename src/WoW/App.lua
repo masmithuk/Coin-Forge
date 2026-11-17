@@ -40,6 +40,7 @@ function App.new(saved, clock)
 
   app.prices = ns.PriceDB.new(saved, clock)
   app.loot = ns.LootDB.new(saved)
+  app.gather = ns.GatherDB.new(saved)
   app.scanner = ns.Scanner.new(app.prices, app.events, saved)
   app.session = ns.Session.new(clock, GetMoney and GetMoney() or 0)
   app.sellSearch = ns.SellSearch.new(function(item, listings)
@@ -202,9 +203,45 @@ function App:valueOf(itemID)
   return self:appraisal():value(itemID)
 end
 
-function App:mobValue(npcID)
+function App:valueFn()
   local appraisal = self:appraisal()
-  return self.loot:expectedValue(npcID, function(id) return appraisal:value(id) end)
+  return function(id) return appraisal:value(id) end
+end
+
+function App:canSkin() return (self.skills and self.skills.Skinning) ~= nil end
+
+--- Value per kill: loot, plus skinning if this character can skin.
+function App:mobValue(npcID)
+  local valueOf = self:valueFn()
+  local ev, kills = self.loot:expectedValue(npcID, valueOf)
+  if ev and self:canSkin() then ev = ev + (self.loot:skinValue(npcID, valueOf) or 0) end
+  return ev, kills
+end
+
+--- Loot per kill only (skinning shown separately in the tooltip).
+function App:mobLootValue(npcID)
+  return self.loot:expectedValue(npcID, self:valueFn())
+end
+
+--- Skinning per corpse for the tooltip, or nil if never skinned.
+function App:mobSkinning(npcID)
+  local valueOf = self:valueFn()
+  local ev, count = self.loot:skinValue(npcID, valueOf)
+  if not ev then return nil end
+  return { ev = ev, count = count, canDo = self:canSkin(), drops = self.loot:topSkins(npcID, valueOf, 3) }
+end
+
+function App:nodeValue(name)
+  return self.gather:expectedValue(name, self:valueFn())
+end
+
+function App:nodeDrops(name)
+  return self.gather:topDrops(name, self:valueFn(), 4)
+end
+
+--- Best veins and herbs gathered at least 3 times.
+function App:topNodes(limit)
+  return self.gather:topNodes(self:valueFn(), 3, limit)
 end
 
 function App:onItemsLooted(items)
@@ -389,11 +426,15 @@ function App:homeState()
   local mobs, recipes = 0, 0
   for _ in pairs(self.db.mobs) do mobs = mobs + 1 end
   for _ in pairs(self.db.recipes) do recipes = recipes + 1 end
+  local nodes = 0
+  for _ in pairs(self.db.nodes or {}) do nodes = nodes + 1 end
   local lastScan = self.prices:lastScan((self:market()))
-  return { scanned = lastScan ~= nil, lastScan = lastScan, mobsLearned = mobs, recipesKnown = recipes }
+  return { scanned = lastScan ~= nil, lastScan = lastScan, mobsLearned = mobs, recipesKnown = recipes,
+    nodesLearned = nodes }
 end
 
 function App:topMobs(limit)
   local appraisal = self:appraisal()
-  return self.loot:topMobs(function(id) return appraisal:value(id) end, self.settings.mobMinKills, limit)
+  return self.loot:topMobs(function(id) return appraisal:value(id) end, self.settings.mobMinKills, limit,
+    { includeSkins = self:canSkin() })
 end

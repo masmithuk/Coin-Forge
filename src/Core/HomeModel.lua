@@ -28,6 +28,9 @@ function HomeModel.features()
       text = "The Conversions tab shows essence combine/split profit. Vendor and From vendor deals need no skills." },
     { title = "Profitable mobs",
       text = "A coin marks mobs worth farming. Values are learned from what you loot, across all your characters." },
+    { title = "Gathering",
+      text = "Veins and herbs show what they yield per gather. Skinning is shown per corpse, "
+        .. "and only counts towards a mob's value if you can skin." },
     { title = "Vendor flips",
       text = "Items a vendor sells for less than the AH pays glow green in the merchant window." },
     { title = "Crafting profit",

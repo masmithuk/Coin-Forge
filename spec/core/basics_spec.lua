@@ -113,6 +113,12 @@ describe("GUID", function()
     assert.equal(99, GUID.npcID("Vehicle-0-1-0-1-99-000"))
   end)
 
+  it("recognises world objects such as veins and herbs", function()
+    assert.is_true(GUID.isObject("GameObject-0-1-0-1-1731-000ABC"))
+    assert.is_false(GUID.isObject("Creature-0-1-0-1-500-AAA"))
+    assert.is_false(GUID.isObject(nil))
+  end)
+
   it("returns nil for players, objects and garbage", function()
     assert.is_nil(GUID.npcID("Player-1234-0ABCDEF0"))
     assert.is_nil(GUID.npcID("GameObject-0-1-0-1-500-000"))
