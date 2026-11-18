@@ -28,6 +28,7 @@ src/Core/Refining.lua
 src/Core/Appraisal.lua
 src/Core/LootDB.lua
 src/Core/GatherDB.lua
+src/Core/History.lua
 src/Core/Opportunities.lua
 src/Core/SellPricing.lua
 src/Core/VendorAnalysis.lua
