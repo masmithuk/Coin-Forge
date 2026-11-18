@@ -110,7 +110,8 @@ local function readBuyback()
   for i = 1, (GetNumBuybackItems and GetNumBuybackItems()) or 0 do
     local _, _, price, qty = GetBuybackItemInfo(i)
     local id = ns.Api.itemIDFromLink(GetBuybackItemLink(i))
-    list[i] = { id = id, qty = qty or 1, price = price or 0, key = tostring(id) .. ":" .. tostring(qty) .. ":" .. tostring(price) }
+    list[i] = { id = id, qty = qty or 1, price = price or 0,
+      key = tostring(id) .. ":" .. tostring(qty) .. ":" .. tostring(price) }
   end
   return list
 end
