@@ -166,6 +166,8 @@ local function start()
     },
   })
 
+  app.events:on("scanFailed", function(reason) ns.Api.print("Scan stopped: " .. reason .. ".") end)
+
   app.events:on("scanComplete", function(result)
     ns.Api.print(("Scan complete: %d items priced, %d deals found."):format(result.itemCount, #app.lastOpportunities))
     nameplates:refreshAll()
@@ -200,7 +202,10 @@ on("AUCTION_HOUSE_SHOW", function()
   if app.scanner.lastResult then app:findOpportunities() end
   panel:Show(AuctionHouseFrame)
 end)
-on("AUCTION_HOUSE_CLOSED", function() panel:Hide() end)
+on("AUCTION_HOUSE_CLOSED", function()
+  app.scanner:onEvent("AUCTION_HOUSE_CLOSED")
+  panel:Hide()
+end)
 on("REPLICATE_ITEM_LIST_UPDATE", function() app.scanner:onEvent("REPLICATE_ITEM_LIST_UPDATE") end)
 
 for _, e in ipairs({ "LOOT_OPENED", "LOOT_SLOT_CLEARED", "LOOT_CLOSED", "UNIT_SPELLCAST_SENT",

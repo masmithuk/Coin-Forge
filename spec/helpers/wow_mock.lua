@@ -122,7 +122,12 @@ function M.install(overrides)
     end
   end
   env.C_Timer = {
-    After = function(_, fn) fn() end,
+    -- next-frame callbacks run at once; delayed ones (timeouts, retries) are
+    -- kept in env.C_Timer.pending for tests that want to run them
+    After = function(delay, fn)
+      if (delay or 0) <= 0 then fn() else env.C_Timer.pending[#env.C_Timer.pending + 1] = fn end
+    end,
+    pending = {},
     NewTicker = function(_, fn) return { Cancel = function() end, fn = fn } end,
   }
   env.GetTime = function() return 1000 end

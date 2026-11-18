@@ -65,6 +65,11 @@ function AuctionPanel.new(app)
   self.onlyCanDo = self.store.onlyCanDo == true
   app.events:on("scanStarted", function() self:UpdateStatus() end)
   app.events:on("scanProgress", function(done, total) self:UpdateStatus(done, total) end)
+  app.events:on("scanFailed", function(reason)
+    self.failure = reason
+    self:UpdateStatus()
+  end)
+  app.events:on("scanStarted", function() self.failure = nil end)
   app.events:on("opportunitiesUpdated", function() self:Refresh() end)
   app.events:on("recipesUpdated", function() if self.view == "crafting" then self:Refresh() end end)
   return self
@@ -289,6 +294,7 @@ function AuctionPanel:UpdateStatus(done, total)
     end
   else
     local text = ns.HomeModel.scanStatus(app.prices:lastScan(key), app.clock())
+    if self.failure then text = "Scan stopped: " .. self.failure .. ". " .. text end
     local result = app.scanner.lastResult
     if result and result.marketKey == key then text = text .. (" - %d items priced"):format(result.itemCount) end
     self.status:SetText(text)

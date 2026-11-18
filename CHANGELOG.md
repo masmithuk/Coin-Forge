@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.1 (2026-11-18)
+
+- Fixed: a scan could stay on "Scanning..." forever. It now gives up with a reason in the panel and in chat:
+  - when the server sends no scan data within 90 seconds;
+  - when the auction house is closed before the data arrives;
+  - when reading the results fails.
+
+  If no data arrived, the 15-minute wait is handed back, so you can press Scan again straight away.
+
 ## 0.6.0 (2026-11-17)
 
 - **Gathering stats.** Mining veins and herbs you gather are learned like mobs: hover a node to see its

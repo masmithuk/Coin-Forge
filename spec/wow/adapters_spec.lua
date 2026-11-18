@@ -146,6 +146,66 @@ describe("WoW adapters", function()
       assert.is_true((scanner:start("Forever|Horde")))
     end)
 
+    describe("when a scan gets stuck", function()
+      local timers
+      local function runTimers()
+        local due = timers
+        timers = {}
+        for _, t in ipairs(due) do t.fn() end
+      end
+      before_each(function()
+        timers = {}
+        _G.C_Timer = { After = function(delay, fn) timers[#timers + 1] = { delay = delay, fn = fn } end }
+      end)
+
+      it("gives up when the server never sends scan data, and allows another try", function()
+        local scanner = ns.Scanner.new(prices, events, db)
+        local reason
+        events:on("scanFailed", function(r) reason = r end)
+        assert.is_true(scanner:start("Forever|Horde"))
+        assert.equal(ns.Scanner.WAIT, timers[1].delay)
+        runTimers()
+        assert.is_false(scanner.running)
+        assert.matches("no scan data", reason)
+        assert.equal(0, scanner:cooldownLeft("Forever|Horde"))
+        assert.is_true((scanner:start("Forever|Horde")))
+      end)
+
+      it("doesn't give up once the data has arrived", function()
+        local scanner = ns.Scanner.new(prices, events, db)
+        local done
+        events:on("scanComplete", function() done = true end)
+        scanner:start("Forever|Horde")
+        scanner:onEvent("REPLICATE_ITEM_LIST_UPDATE")
+        runTimers() -- the watchdog and the batch steps
+        runTimers()
+        assert.is_true(done)
+        assert.is_false(scanner.running)
+      end)
+
+      it("stops with the error instead of hanging when reading a result fails", function()
+        _G.C_AuctionHouse.GetReplicateItemInfo = function() error("bad index") end
+        local scanner = ns.Scanner.new(prices, events, db)
+        local reason
+        events:on("scanFailed", function(r) reason = r end)
+        scanner:start("Forever|Horde")
+        scanner:onEvent("REPLICATE_ITEM_LIST_UPDATE")
+        assert.is_false(scanner.running)
+        assert.matches("bad index", reason)
+      end)
+
+      it("gives up if the auction house is closed before the data arrives", function()
+        local scanner = ns.Scanner.new(prices, events, db)
+        local reason
+        events:on("scanFailed", function(r) reason = r end)
+        scanner:start("Forever|Horde")
+        scanner:onEvent("AUCTION_HOUSE_CLOSED")
+        assert.is_false(scanner.running)
+        assert.matches("closed", reason)
+        assert.equal(0, scanner:cooldownLeft("Forever|Horde"))
+      end)
+    end)
+
     it("ignores the update event when no scan is running", function()
       local scanner = ns.Scanner.new(prices, events, db)
       scanner:onEvent("REPLICATE_ITEM_LIST_UPDATE")

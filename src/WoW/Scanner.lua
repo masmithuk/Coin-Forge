@@ -10,6 +10,12 @@
 --   "scanStarted"   (marketKey)
 --   "scanProgress"  (done, total)
 --   "scanComplete"  (result)  result = PriceDB commit result
+--   "scanFailed"    (reason)  the scan was given up; another can be started
+--
+-- A scan never hangs: if the server sends no data within WAIT seconds, or the
+-- auction house closes first, or reading the results errors, it is given up
+-- with a reason. If no data ever arrived the realm's cooldown is handed back,
+-- since the server didn't scan.
 local _, ns = ...
 
 local Scanner = {}
@@ -18,6 +24,7 @@ ns.Scanner = Scanner
 
 Scanner.COOLDOWN = 15 * 60
 Scanner.BATCH = 1000
+Scanner.WAIT = 90 -- seconds to wait for the server's scan data
 
 -- Return positions of C_AuctionHouse.GetReplicateItemInfo
 local COUNT, BUYOUT, ITEM_ID = 3, 10, 17
@@ -60,15 +67,40 @@ function Scanner:start(marketKey)
   if wait > 0 then return false, wait end
   self.running = true
   self.marketKey = marketKey
-  self.state.byRealm[realmOf(marketKey)] = time()
+  local realm = realmOf(marketKey)
+  self.previousStart = self.state.byRealm[realm]
+  self.state.byRealm[realm] = time()
+  local attempt = {}
+  self.attempt = attempt
   self.events:emit("scanStarted", marketKey)
+  C_Timer.After(Scanner.WAIT, function()
+    if self.attempt == attempt and self.running and not self.scan then
+      self:fail("no scan data from the server after " .. Scanner.WAIT .. " seconds"
+        .. " (it may still be on its 15 minute limit from another scan). Try again")
+    end
+  end)
   C_AuctionHouse.ReplicateItems()
   return true
 end
 
+--- Gives up the running scan and tells listeners why.
+function Scanner:fail(reason)
+  if not self.scan then
+    -- no data arrived, so the server didn't scan: hand the cooldown back
+    self.state.byRealm[realmOf(self.marketKey)] = self.previousStart
+  end
+  self.scan = nil
+  self.running = false
+  self.attempt = nil
+  self.events:emit("scanFailed", reason)
+end
+
 function Scanner:onEvent(event)
-  if event == "REPLICATE_ITEM_LIST_UPDATE" and self.running and not self.scan then
+  if not self.running then return end
+  if event == "REPLICATE_ITEM_LIST_UPDATE" and not self.scan then
     self:process()
+  elseif event == "AUCTION_HOUSE_CLOSED" and not self.scan then
+    self:fail("the auction house was closed before the scan data arrived")
   end
 end
 
@@ -77,7 +109,9 @@ function Scanner:process()
   self.scan = self.prices:beginScan(self.marketKey)
   local index = 0
 
-  local function step()
+  local attempt = self.attempt
+  local step
+  local function batch()
     local last = math.min(index + Scanner.BATCH, total) - 1
     for i = index, last do
       local info = { C_AuctionHouse.GetReplicateItemInfo(i) }
@@ -88,7 +122,15 @@ function Scanner:process()
     end
     index = last + 1
     self.events:emit("scanProgress", index, total)
-    if index < total then
+    return index < total
+  end
+
+  step = function()
+    if self.attempt ~= attempt then return end -- given up meanwhile
+    local ok, more = pcall(batch)
+    if not ok then
+      self:fail("reading the scan failed: " .. tostring(more))
+    elseif more then
       C_Timer.After(0, step)
     else
       self:finish()
@@ -102,6 +144,7 @@ function Scanner:finish()
   local result = self.scan:commit()
   self.scan = nil
   self.running = false
+  self.attempt = nil
   self.lastResult = result
   self.events:emit("scanComplete", result)
 end
