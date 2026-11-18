@@ -62,6 +62,34 @@ describe("Selling adapters", function()
       assert.equal(40, silk.postable) -- the server's count across stacks
       assert.same({ bag = 0, slot = 1 }, { bag = silk.bag, slot = silk.slot })
     end)
+
+    it("includes the reagent bag slot, where profession bags like a skinning bag go", function()
+      installBags({
+        [0] = { [1] = { 4306, 20, true } },
+        [5] = { [1] = { 2318, 12, true }, [2] = { 2319, 4, true } },
+      }, { NUM_TOTAL_EQUIPPED_BAG_SLOTS = 5 })
+      ns = addon.loadWith(FILES)
+      local ids = {}
+      for _, i in ipairs(ns.Bags.sellable()) do ids[i.itemID] = i.bag end
+      assert.same({ [4306] = 0, [2318] = 5, [2319] = 5 }, ids)
+    end)
+
+    it("checks bag 5 even when the client doesn't say how many bag slots there are", function()
+      installBags({ [5] = { [1] = { 2318, 12, true } } })
+      ns = addon.loadWith(FILES)
+      assert.equal(2318, ns.Bags.sellable()[1].itemID)
+    end)
+
+    it("explains per bag what it found, for /cforge bags", function()
+      installBags({
+        [0] = { [1] = { 4306, 20, true }, [2] = { 901, 1, false, true } },
+        [5] = { [1] = { 2318, 12, true } },
+      })
+      ns = addon.loadWith(FILES)
+      local d = ns.Bags.diagnose()
+      assert.same({ bag = 0, slots = 4, items = 2, sellable = 1 }, d[1])
+      assert.same({ bag = 5, slots = 4, items = 1, sellable = 1 }, d[#d])
+    end)
   end)
 
   describe("SellSearch", function()

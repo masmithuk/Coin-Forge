@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.1 (2026-11-18)
+
+- Fixed: items in the reagent bag slot (bag 5, where profession bags like a skinning bag can go) were
+  missing from the Sell tab. Coin Forge now looks in every bag.
+- New `/cforge bags` command shows what the Sell tab finds in each bag (slots, items, sellable), to help
+  when something is missing.
+
 ## 0.7.0 (2026-11-18)
 
 - **Track record.** Coin Forge now follows what you do with its suggestions and shows how each kind

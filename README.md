@@ -159,6 +159,7 @@ Some details:
 | --- | --- |
 | `/cforge` | Open or close the home screen |
 | `/cforge mobs` | List the 10 best mobs you've farmed |
+| `/cforge bags` | Show what the Sell tab finds in each bag |
 | `/cforge history` | Show the track record: predicted vs actual for each kind of suggestion |
 | `/cforge history clear [days]` | Clear finished rounds, or only those older than `[days]`. Totals are kept |
 | `/cforge reset` | Start a new farming session |

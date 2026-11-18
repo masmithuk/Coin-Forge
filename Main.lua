@@ -47,6 +47,7 @@ local function printHelp()
   p("  /cforge minimap - show or hide the minimap button")
   p("  /cforge config - list settings, /cforge config <name> <value> to change one")
   p("  /cforge history - how the suggestions you acted on turned out")
+  p("  /cforge bags - what the Sell tab finds in each bag")
   p("  /cforge history clear [days] - clear finished rounds (older than [days]); totals are kept")
 end
 
@@ -108,6 +109,11 @@ local function setupCommands()
     config = printConfig,
     mobs = printMobs,
     history = history,
+    bags = function()
+      for _, d in ipairs(ns.Bags.diagnose()) do
+        ns.Api.print(("bag %d: %d slots, %d items, %d sellable on the AH"):format(d.bag, d.slots, d.items, d.sellable))
+      end
+    end,
     recipes = function()
       local d = ns.TradeSkillRecorder.diagnose()
       local p = ns.Api.print
