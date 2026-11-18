@@ -4,7 +4,7 @@ local wow = require("helpers.wow_mock")
 local ADAPTERS = {
   "src/WoW/Api.lua", "src/WoW/ItemInfo.lua", "src/WoW/Market.lua", "src/WoW/Scanner.lua",
   "src/WoW/Professions.lua", "src/WoW/TradeSkillRecorder.lua", "src/WoW/LootRecorder.lua",
-  "src/WoW/Nameplates.lua", "src/WoW/Merchant.lua", "src/WoW/Tooltip.lua",
+  "src/WoW/Nameplates.lua", "src/WoW/Merchant.lua", "src/WoW/Tooltip.lua", "src/WoW/TradeRecorder.lua",
 }
 
 local function link(id) return "|cff1eff00|Hitem:" .. id .. "::::::::60:::::|h[Item " .. id .. "]|h|r" end
@@ -210,6 +210,158 @@ describe("WoW adapters", function()
       local scanner = ns.Scanner.new(prices, events, db)
       scanner:onEvent("REPLICATE_ITEM_LIST_UPDATE")
       assert.same({}, prices:markets())
+    end)
+  end)
+
+  describe("TradeRecorder", function()
+    local book, rec, deals, now, mail, buyback
+    local DAY = 86400
+    local OPTS = { unsoldDays = 14, cut = 0.05 }
+    local NAMES = { [2589] = "Linen Cloth", [4306] = "Silk Cloth", [5] = "Spider Leg" }
+
+    before_each(function()
+      now = 1000 * DAY
+      mail, buyback = {}, {}
+      deals = { [4306] = { kind = "flip", profit = 300, qty = 3 }, [5] = { kind = "vendorFlip", profit = 40, qty = 2 } }
+      wow.install({
+        time = function() return now end,
+        ERR_AUCTION_EXPIRED_S = "Your auction of %s has expired.",
+        GetItemInfo = function(id) return NAMES[id] end,
+        C_Item = { GetItemID = function(location) return location.itemID end },
+        C_AuctionHouse = {
+          PostCommodity = function() return true end,
+          PostItem = function() return true end,
+          CalculateCommodityDeposit = function(_, _, qty) return 2 * qty end,
+          CalculateItemDeposit = function() return 15 end,
+          StartCommoditiesPurchase = function() end,
+          ConfirmCommoditiesPurchase = function() end,
+          PlaceBid = function() end,
+          GetNumItemSearchResults = function() return 1 end,
+          GetItemSearchResultInfo = function() return { auctionID = 77, quantity = 2, buyoutAmount = 500 } end,
+        },
+        BuyMerchantItem = function() end,
+        BuybackItem = function() end,
+        GetMerchantItemID = function() return 5 end,
+        GetMerchantItemInfo = function() return "Spider Leg", 1, 60, 1 end,
+        GetNumBuybackItems = function() return #buyback end,
+        GetBuybackItemInfo = function(i) local b = buyback[i]; return "x", 1, b.price, b.qty end,
+        GetBuybackItemLink = function(i) return "|Hitem:" .. buyback[i].id .. ":|h" end,
+        GetInboxNumItems = function() return #mail end,
+        GetInboxHeaderInfo = function(i) return nil, nil, "Auction House", "Sold", 0, 0, mail[i].daysLeft end,
+        GetInboxInvoiceInfo = function(i)
+          local m = mail[i]
+          return m.type, m.item, "buyer", m.bid, 0, 0, m.cut, 0, 0, 0, m.count
+        end,
+      })
+      ns = addon.loadWith(ADAPTERS)
+      book = ns.History.new({}, function() return now end):market("Forever|Horde")
+      rec = ns.TradeRecorder.new({
+        book = function() return book end,
+        dealFor = function(itemID, kinds)
+          local d = deals[itemID]
+          for _, k in ipairs(kinds) do if d and d.kind == k then return d end end
+        end,
+      })
+      rec:install()
+    end)
+
+    local function rounds(kind)
+      local list = {}
+      for _, r in ipairs(book:rounds(OPTS)) do if r.kind == kind then list[#list + 1] = r end end
+      return list
+    end
+
+    it("records a commodity purchase tagged with its deal", function()
+      C_AuctionHouse.StartCommoditiesPurchase(4306, 3)
+      rec:onEvent("COMMODITY_PRICE_UPDATED", 100, 300)
+      C_AuctionHouse.ConfirmCommoditiesPurchase(4306, 3)
+      rec:onEvent("COMMODITY_PURCHASE_SUCCEEDED")
+      local flip = rounds("flip")[1]
+      assert.same({ 4306, 300, 300 }, { flip.itemID, flip.cost, flip.predicted })
+    end)
+
+    it("doesn't record a commodity purchase that failed", function()
+      C_AuctionHouse.StartCommoditiesPurchase(4306, 3)
+      C_AuctionHouse.ConfirmCommoditiesPurchase(4306, 3)
+      rec:onEvent("COMMODITY_PURCHASE_FAILED")
+      rec:onEvent("COMMODITY_PURCHASE_SUCCEEDED")
+      assert.equal(0, #book.data.entries)
+    end)
+
+    it("records an item purchase from the auction's search result", function()
+      rec:onEvent("ITEM_SEARCH_RESULTS_UPDATED", { itemID = 4306 })
+      C_AuctionHouse.PlaceBid(77, 500)
+      rec:onEvent("AUCTION_HOUSE_PURCHASE_COMPLETED", 77)
+      local e = book.data.entries[1]
+      assert.same({ "buy", 4306, 2, 250, "flip" }, { e.e, e.id, e.q, e.p, e.kind })
+    end)
+
+    it("logs buys that weren't suggested as untagged", function()
+      C_AuctionHouse.StartCommoditiesPurchase(2589, 5)
+      rec:onEvent("COMMODITY_PRICE_UPDATED", 10, 50)
+      C_AuctionHouse.ConfirmCommoditiesPurchase(2589, 5)
+      rec:onEvent("COMMODITY_PURCHASE_SUCCEEDED")
+      assert.is_nil(book.data.entries[1].kind)
+    end)
+
+    it("records posts with the suggested price and deposit", function()
+      rec:expectPost(2589, 12)
+      C_AuctionHouse.PostCommodity({ itemID = 2589 }, 2, 20, 10)
+      C_AuctionHouse.PostItem({ itemID = 4306 }, 3, 1, nil, 900)
+      local a, b = book.data.entries[1], book.data.entries[2]
+      assert.same({ "post", 2589, 20, 10, 12, 40 }, { a.e, a.id, a.q, a.p, a.s, a.d })
+      assert.same({ 4306, 1, 900, 15 }, { b.id, b.q, b.p, b.d })
+      assert.is_nil(b.s) -- posted without Coin Forge's suggestion
+    end)
+
+    it("records sales from the sale mail once, and expiries from the system message", function()
+      C_AuctionHouse.PostCommodity({ itemID = 2589 }, 2, 20, 10)
+      C_AuctionHouse.PostItem({ itemID = 4306 }, 3, 1, nil, 900)
+      mail = { { type = "seller", item = "Linen Cloth", bid = 200, cut = 10, count = 20, daysLeft = 29.9 } }
+      rec:onEvent("MAIL_INBOX_UPDATE")
+      rec:onEvent("MAIL_INBOX_UPDATE") -- read again: not a second sale
+      rec:onEvent("CHAT_MSG_SYSTEM", "Your auction of Silk Cloth has expired.")
+      local sell = book:summary(OPTS).sell
+      assert.same({ 2, 1, 1, 190 - 15 }, { sell.rounds, sell.sold, sell.unsold, sell.actual })
+    end)
+
+    it("ignores sale mail for items it never saw posted", function()
+      mail = { { type = "seller", item = "Spider Leg", bid = 200, cut = 10, count = 1, daysLeft = 29 } }
+      rec:onEvent("MAIL_INBOX_UPDATE")
+      rec:onEvent("CHAT_MSG_SYSTEM", "Your auction of Spider Leg has expired.")
+      rec:onEvent("CHAT_MSG_SYSTEM", "You feel rested.")
+      assert.equal(0, #book.data.entries)
+    end)
+
+    it("records vendor buys and sales to a merchant", function()
+      BuyMerchantItem(3, 2)
+      rec:onEvent("MERCHANT_SHOW")
+      buyback = { { id = 2589, qty = 1, price = 5 } }
+      rec:onEvent("MERCHANT_SHOW")
+      buyback[2] = { id = 5, qty = 2, price = 160 }
+      rec:onEvent("MERCHANT_UPDATE")
+      local e = book.data.entries
+      assert.same({ "buy", 5, 2, 60, "vendorFlip" }, { e[1].e, e[1].id, e[1].q, e[1].p, e[1].kind })
+      assert.same({ "vendorSale", 5, 2, 80 }, { e[2].e, e[2].id, e[2].q, e[2].p })
+      assert.equal(2, #e)
+    end)
+
+    it("doesn't count buying back as a sale", function()
+      buyback = { { id = 2589, qty = 1, price = 5 }, { id = 5, qty = 2, price = 160 } }
+      rec:onEvent("MERCHANT_SHOW")
+      BuybackItem(1)
+      buyback = { { id = 5, qty = 2, price = 160 } }
+      rec:onEvent("MERCHANT_UPDATE")
+      assert.equal(0, #book.data.entries)
+    end)
+
+    it("handles a full buyback list dropping its oldest item", function()
+      buyback = { { id = 1, qty = 1, price = 1 }, { id = 2, qty = 1, price = 1 } }
+      rec:onEvent("MERCHANT_SHOW")
+      buyback = { { id = 2, qty = 1, price = 1 }, { id = 5, qty = 1, price = 80 } }
+      rec:onEvent("MERCHANT_UPDATE")
+      assert.equal(1, #book.data.entries)
+      assert.equal(5, book.data.entries[1].id)
     end)
   end)
 

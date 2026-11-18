@@ -93,6 +93,28 @@ function Book:openPostItems()
   return open
 end
 
+--- Units of the oldest still-listed post of an item (what an "expired" message refers to).
+function Book:oldestOpenLeft(itemID)
+  for _, r in ipairs(self:replay(0.05)) do
+    if r.kind == "sell" and r.itemID == itemID and r.left > 0 then return r.left end
+  end
+  return nil
+end
+
+--- Remembers a sale mail so reading the mailbox again doesn't count it twice.
+--- @return true the first time a key is seen
+function Book:firstSeenMail(key)
+  local now = self.clock()
+  local seen = self.data.mail or {}
+  self.data.mail = seen
+  for k, t in pairs(seen) do
+    if now - t > 31 * DAY then seen[k] = nil end -- auction mail lasts 30 days
+  end
+  if seen[key] then return false end
+  seen[key] = now
+  return true
+end
+
 -- Replaying the log into rounds ------------------------------------------------
 
 local function newRound(kind, entry)

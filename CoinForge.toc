@@ -46,6 +46,7 @@ src/WoW/Scanner.lua
 src/WoW/Professions.lua
 src/WoW/TradeSkillRecorder.lua
 src/WoW/LootRecorder.lua
+src/WoW/TradeRecorder.lua
 src/WoW/Nameplates.lua
 src/WoW/Merchant.lua
 src/WoW/Bags.lua

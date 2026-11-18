@@ -113,7 +113,7 @@ function M.install(overrides)
   env.Minimap = M.frame(env.UIParent, "Minimap")
   env.hooksecurefunc = function(a, b, c)
     local tbl, name, fn = a, b, c
-    if type(a) == "string" then tbl, name, fn = env, a, b end
+    if type(a) == "string" then tbl, name, fn = _G, a, b end
     local orig = tbl[name]
     tbl[name] = function(...)
       local r = orig and orig(...)
