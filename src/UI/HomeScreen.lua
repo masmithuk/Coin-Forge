@@ -6,6 +6,8 @@
 --   Best deals     top deals from your last scan
 --   Best mobs      most valuable mobs you've farmed
 --   Best to gather most valuable veins and herbs you've gathered
+--   Track record   how Coin Forge's suggestions you acted on turned out, with a
+--                  hint (and a Clear button) once the log gets big or old
 --   This session   gold per hour
 --   What it does   one line per feature
 local _, ns = ...
@@ -69,6 +71,20 @@ function HomeScreen:Line(template, color)
   fs:SetTextColor(c[1], c[2], c[3])
   fs:Show()
   return fs
+end
+
+function HomeScreen:ClearButton()
+  if not self.clearButton then
+    local b = CreateFrame("Button", nil, self.content, "UIPanelButtonTemplate")
+    b:SetSize(180, 22)
+    b:SetScript("OnClick", function(button)
+      local removed = self.app:clearHistory(button.days)
+      ns.Api.print(("Track record: cleared %d entries, totals kept."):format(removed))
+      self:Render()
+    end)
+    self.clearButton = b
+  end
+  return self.clearButton
 end
 
 function HomeScreen:Render()
@@ -137,6 +153,28 @@ function HomeScreen:Render()
     heading("This session")
     add(("%s gained (%s coin, %s loot), about |cffffd100%s|r per hour"):format(
       Money.short(session.total), Money.short(session.money), Money.short(session.loot), Money.short(session.perHour)))
+  end
+
+  local track = Home.trackLines(app:trackRecord())
+  if #track > 0 then
+    heading("Track record: suggestions vs what happened")
+    for _, line in ipairs(track) do add(line) end
+  end
+  local advice = app:tidyAdvice()
+  if advice then
+    if #track == 0 then heading("Track record") end
+    add(Home.tidyText(advice), nil, C.muted)
+    -- clear what's over a month old when there is some, else every finished round
+    local days = advice.oldestDays > 30 and 30 or nil
+    local button = self:ClearButton()
+    button:SetText(days and "Clear older than 30 days" or "Clear finished rounds")
+    button.days = days
+    button:ClearAllPoints()
+    button:SetPoint("TOPLEFT", self.content, "TOPLEFT", PAD, -y)
+    button:Show()
+    y = y + 28
+  elseif self.clearButton then
+    self.clearButton:Hide()
   end
 
   heading("What it does")

@@ -41,6 +41,7 @@ function App.new(saved, clock)
   app.prices = ns.PriceDB.new(saved, clock)
   app.loot = ns.LootDB.new(saved)
   app.gather = ns.GatherDB.new(saved)
+  app.trackLog = ns.History.new(saved, clock)
   app.scanner = ns.Scanner.new(app.prices, app.events, saved)
   app.session = ns.Session.new(clock, GetMoney and GetMoney() or 0)
   app.sellSearch = ns.SellSearch.new(function(item, listings)
@@ -89,6 +90,47 @@ end
 --- The market whose prices we use: the AH you're at, else your faction's AH.
 function App:market()
   return ns.Market.current()
+end
+
+-- Track record --------------------------------------------------------------
+
+--- The trade history of the auction house you're at.
+function App:book()
+  return self.trackLog:market((self:market()))
+end
+
+function App:historyOpts()
+  local _, neutral = self:market()
+  return { unsoldDays = self.settings.unsoldDays, cut = ns.Fees.cutRate(neutral) }
+end
+
+function App:trackRecord()
+  return self:book():summary(self:historyOpts())
+end
+
+function App:tidyAdvice()
+  return self:book():tidyAdvice({ entries = self.settings.historyTidyEntries, days = self.settings.historyTidyDays })
+end
+
+--- Clears finished rounds older than `days` (nil = all finished). Returns entries removed.
+function App:clearHistory(days)
+  return self:book():clear(days, self:historyOpts())
+end
+
+--- The most profitable deal of these kinds for an item in the last results.
+function App:dealFor(itemID, kinds)
+  local wanted = {}
+  for _, k in ipairs(kinds) do wanted[k] = true end
+  local best
+  for _, d in ipairs(self.lastOpportunities or {}) do
+    if d.itemID == itemID and wanted[d.kind] and (not best or d.profit > best.profit) then best = d end
+  end
+  return best and { kind = best.kind, profit = best.profit, qty = best.qty } or nil
+end
+
+--- The Sell tab tells the trade recorder what it suggested before posting.
+function App:expectPost(itemID, suggestedPrice)
+  if self.trades then self.trades:expectPost(itemID, suggestedPrice) end
 end
 
 function App:value(itemID, marketKey)

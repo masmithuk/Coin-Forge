@@ -84,6 +84,39 @@ describe("UI smoke test", function()
     assert.is_not_nil(_G.CoinForgeMinimapButton)
   end)
 
+  it("follows trades into the track record and offers to clear it", function()
+    local printed = {}
+    _G.DEFAULT_CHAT_FRAME.AddMessage = function(_, msg) printed[#printed + 1] = msg end
+    -- a Sell-tab-style post, then its sale mail
+    _G.C_Item = { GetItemID = function(location) return location.itemID end }
+    _G.C_AuctionHouse.PostCommodity = function() return true end
+    _G.hooksecurefunc(_G.C_AuctionHouse, "PostCommodity", function(location, duration, qty, price)
+      ns.app.trades:posted(location, duration, qty, price, true)
+    end)
+    ns.app:expectPost(4306, 100)
+    _G.C_AuctionHouse.PostCommodity({ itemID = 4306 }, 2, 5, 90)
+    _G.GetInboxNumItems = function() return 1 end
+    _G.GetInboxHeaderInfo = function() return nil, nil, "AH", "Sold", 0, 0, 30 end
+    _G.GetInboxInvoiceInfo = function() return "seller", "Item 4306", "x", 450, 0, 0, 20, 0, 0, 0, 5 end
+    fire("MAIL_INBOX_UPDATE")
+    fire("MERCHANT_SHOW")
+    fire("MERCHANT_UPDATE")
+    fire("CHAT_MSG_SYSTEM", "You feel rested.")
+
+    _G.SlashCmdList.COINFORGE("history")
+    assert.matches("Sell tab: 1 posts, 100%% sold at 90%% of the suggestion", printed[#printed])
+
+    ns.app.settings.historyTidyEntries = 1
+    _G.SlashCmdList.COINFORGE("")
+    assert.is_true(_G.CoinForgeHome.shown)
+    _G.SlashCmdList.COINFORGE("history clear")
+    assert.matches("cleared 2 entries", printed[#printed])
+    _G.SlashCmdList.COINFORGE("history")
+    assert.matches("Sell tab: 1 posts", printed[#printed])
+    _G.SlashCmdList.COINFORGE("history clear soon")
+    assert.matches("Usage", printed[#printed])
+  end)
+
   it("opens the home screen from the slash command and minimap", function()
     _G.SlashCmdList.COINFORGE("")
     assert.is_true(_G.CoinForgeHome.shown)

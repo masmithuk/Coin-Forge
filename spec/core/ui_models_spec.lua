@@ -184,6 +184,34 @@ describe("HomeModel", function()
     end
   end)
 
+  it("describes the track record, one line per kind in a fixed order", function()
+    local lines = Home.trackLines({
+      sell = { rounds = 20, sold = 15, unsold = 5, open = 3, logged = 0, predicted = 50000, actual = 41000,
+        sellRate = 0.75, vsSuggested = 0.96 },
+      flip = { rounds = 12, sold = 9, unsold = 3, open = 2, logged = 0, predicted = 34000, actual = 21000 },
+      craft = { rounds = 0, sold = 0, unsold = 0, open = 0, logged = 4, predicted = 10000 },
+      vendor = { rounds = 0, sold = 0, unsold = 0, open = 1, logged = 0, predicted = 0 },
+    })
+    assert.same({
+      "Flip: 12 done, predicted +3g 40s, actual +2g 10s (9 sold, 3 unsold, 2 waiting)",
+      "Vendor: 1 waiting",
+      "Craft: 4 bought, predicted +1g (not followed through)",
+      "Sell tab: 20 posts, 75% sold at 96% of the suggestion, made +4g 10s (3 still listed)",
+    }, lines)
+    assert.same({}, Home.trackLines({}))
+  end)
+
+  it("shows losses with a minus sign", function()
+    assert.equal("Other AH: 1 done, predicted +50s, actual -20s (0 sold, 1 unsold)",
+      Home.trackLines({ arbitrage = { rounds = 1, sold = 0, unsold = 1, open = 0, logged = 0,
+        predicted = 5000, actual = -2000 } })[1])
+  end)
+
+  it("explains why to clear the track record", function()
+    assert.equal("Your track record has 2100 entries going back 64 days. Clearing old ones keeps logging in"
+      .. " and /reload quick; the totals above are kept.", Home.tidyText({ entries = 2100, oldestDays = 64 }))
+  end)
+
   it("builds a getting-started checklist that ticks itself off", function()
     local steps = Home.checklist({ scanned = true, mobsLearned = 0, recipesKnown = 3 })
     assert.is_true(steps[1].done)

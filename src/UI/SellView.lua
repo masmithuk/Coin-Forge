@@ -369,6 +369,7 @@ function SellView:Post()
   if not row then return end
   local price, qty = self:Values()
   if not SellView.postState(price, qty, row.item.postable, ns.Poster.ready()) then return end
+  self.app:expectPost(row.item.itemID, self.suggestion and self.suggestion.price)
   local ok, reason = ns.Poster.post(row.item, price, qty, self.duration)
   if not ok then
     self.status:SetText(reason)

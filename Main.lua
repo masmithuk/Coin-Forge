@@ -6,13 +6,16 @@ local events = CreateFrame("Frame")
 local handlers = {}
 local app, home, minimap, panel, merchant, nameplates, lootRecorder
 
--- Registers a handler for a game event. Events differ between game versions,
+-- Registers a handler for a game event (several handlers may share one). Events differ between game versions,
 -- and the retail-based Forever client raises an error for unknown names, which
 -- would stop this file loading. So only register events the client knows.
 local function on(event, fn)
   local isValid = _G.C_EventUtils and _G.C_EventUtils.IsEventValid
   if isValid and not isValid(event) then return end
-  if pcall(events.RegisterEvent, events, event) then handlers[event] = fn end
+  if handlers[event] or pcall(events.RegisterEvent, events, event) then
+    handlers[event] = handlers[event] or {}
+    table.insert(handlers[event], fn)
+  end
 end
 
 -- Runs fn at most once per `delay` seconds, after events stop arriving.
@@ -43,6 +46,8 @@ local function printHelp()
   p("  /cforge recipes - with a profession window open, show what the recipe recorder sees")
   p("  /cforge minimap - show or hide the minimap button")
   p("  /cforge config - list settings, /cforge config <name> <value> to change one")
+  p("  /cforge history - how the suggestions you acted on turned out")
+  p("  /cforge history clear [days] - clear finished rounds (older than [days]); totals are kept")
 end
 
 local function printConfig(args)
@@ -80,12 +85,29 @@ local function printMobs()
   end
 end
 
+local function history(args)
+  local p = ns.Api.print
+  if args[1] == "clear" then
+    local days = tonumber(args[2])
+    if args[2] and not days then return p("Usage: /cforge history clear [days]") end
+    local removed = app:clearHistory(days)
+    return p(("Track record: cleared %d entries%s, totals kept."):format(removed,
+      days and (" older than %d days"):format(days) or ""))
+  end
+  local lines = ns.HomeModel.trackLines(app:trackRecord())
+  if #lines == 0 then return p("No track record yet: buy a deal or post from the Sell tab and it starts here.") end
+  for _, line in ipairs(lines) do p(line) end
+  local advice = app:tidyAdvice()
+  if advice then p(ns.HomeModel.tidyText(advice) .. " Type /cforge history clear 30.") end
+end
+
 local function setupCommands()
   local router = ns.Commands.new({
     [""] = function() home:Toggle() end,
     help = printHelp,
     config = printConfig,
     mobs = printMobs,
+    history = history,
     recipes = function()
       local d = ns.TradeSkillRecorder.diagnose()
       local p = ns.Api.print
@@ -141,6 +163,12 @@ local function start()
   nameplates = ns.Nameplates.new({ settings = app.settings, valueOf = function(id) return app:mobValue(id) end })
   lootRecorder = ns.LootRecorder.new(app.loot, function(items) app:onItemsLooted(items) end, app.gather)
 
+  app.trades = ns.TradeRecorder.new({
+    book = function() return app:book() end,
+    dealFor = function(itemID, kinds) return app:dealFor(itemID, kinds) end,
+  })
+  app.trades:install()
+
   ns.Tooltip.install({
     settings = app.settings,
     item = {
@@ -185,6 +213,12 @@ local function start()
     app.db.ui.welcomed = true
     ns.Api.print("loaded. Click the coin on your minimap (or type /cforge) to get started.")
   end
+
+  -- once per session: hint that the track record could do with a clear-out
+  C_Timer.After(15, function()
+    local advice = app:tidyAdvice()
+    if advice then ns.Api.print(ns.HomeModel.tidyText(advice) .. " Type /cforge history clear 30.") end
+  end)
 end
 
 -- Game events ------------------------------------------------------------------
@@ -211,6 +245,9 @@ on("REPLICATE_ITEM_LIST_UPDATE", function() app.scanner:onEvent("REPLICATE_ITEM_
 for _, e in ipairs({ "LOOT_OPENED", "LOOT_SLOT_CLEARED", "LOOT_CLOSED", "UNIT_SPELLCAST_SENT",
   "UNIT_SPELLCAST_FAILED", "UNIT_SPELLCAST_FAILED_QUIET", "UNIT_SPELLCAST_INTERRUPTED" }) do
   on(e, function(...) lootRecorder:onEvent(e, ...) end)
+end
+for _, e in ipairs(ns.TradeRecorder.EVENTS) do
+  on(e, function(...) if app and app.trades then app.trades:onEvent(e, ...) end end)
 end
 for _, e in ipairs({ "NAME_PLATE_UNIT_ADDED", "NAME_PLATE_UNIT_REMOVED" }) do
   on(e, function(unit)
@@ -253,6 +290,6 @@ on("GET_ITEM_INFO_RECEIVED", debounce(1, function()
 end))
 
 events:SetScript("OnEvent", function(_, event, ...)
-  local handler = handlers[event]
-  if handler and (app or event == "ADDON_LOADED") then handler(...) end
+  if not (app or event == "ADDON_LOADED") then return end
+  for _, handler in ipairs(handlers[event] or {}) do handler(...) end
 end)

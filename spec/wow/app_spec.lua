@@ -437,6 +437,37 @@ describe("App", function()
     end)
   end)
 
+  describe("track record", function()
+    it("tags trades with the deal shown for that item", function()
+      app.lastOpportunities = {
+        { kind = "flip", itemID = 4306, profit = 900, qty = 3 },
+        { kind = "flip", itemID = 4306, profit = 1200, qty = 4 },
+        { kind = "vendorFlip", itemID = 4306, profit = 50, qty = 1 },
+      }
+      assert.same({ kind = "flip", profit = 1200, qty = 4 }, app:dealFor(4306, { "flip", "vendor" }))
+      assert.same({ kind = "vendorFlip", profit = 50, qty = 1 }, app:dealFor(4306, { "vendorFlip" }))
+      assert.is_nil(app:dealFor(99, { "flip" }))
+    end)
+
+    it("summarises and clears the current auction house's history", function()
+      app:book():post(1, 1, 100, 100, 0)
+      app:book():sold(1, 1, 95)
+      assert.equal(95, app:trackRecord().sell.actual)
+      assert.is_nil(app:tidyAdvice())
+      app.settings.historyTidyEntries = 2
+      assert.same({ entries = 2, oldestDays = 0 }, app:tidyAdvice())
+      assert.equal(2, app:clearHistory(nil))
+      assert.equal(95, app:trackRecord().sell.actual)
+    end)
+
+    it("passes the Sell tab's suggestion to the trade recorder", function()
+      local got
+      app.trades = { expectPost = function(_, id, price) got = { id, price } end }
+      app:expectPost(2589, 12)
+      assert.same({ 2589, 12 }, got)
+    end)
+  end)
+
   it("reports home screen state", function()
     local s = app:homeState()
     assert.is_false(s.scanned)
