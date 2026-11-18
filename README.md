@@ -20,7 +20,8 @@ name; the slash command is now `/cforge`.*
 | **Out in the world** | A coin and value over nameplates of mobs worth farming, plus "loot per kill", "skinning per corpse" and best drops in the mob's tooltip. Veins and herbs show their value per gather and yields. |
 | **Vendors** | Items a vendor sells for less than the AH pays glow green, with the profit shown underneath. |
 | **Item tooltips** | AH value, lowest listing, vendor price and the **best thing to do** with the item. **Turn into** shows what it can be crafted or converted into with a single ingredient (ore into bars, cloth into bandages, essences), valued per item, with the gain or loss in green or red. Characters with Enchanting also see a disenchant estimate with the likely materials at their latest AH price (from your last scan or search), and the skill needed if yours is too low. |
-| **Home screen** | Opened from the minimap coin or `/cforge`: status, a getting-started checklist, best deals, best mobs, best nodes to gather, gold per hour and a short guide. |
+| **Home screen** | Opened from the minimap coin or `/cforge`: status, a getting-started checklist, best deals, best mobs, best nodes to gather, your track record, gold per hour and a short guide. |
+| **Track record** | Follows the deals you buy and the auctions you post until they sell or expire, and shows predicted vs actual profit for each kind of suggestion. |
 
 Coin Forge never buys, posts or clicks for you. Every purchase goes through Blizzard's own UI.
 
@@ -121,12 +122,45 @@ Open the **Sell** tab on the Coin Forge panel at any auction house.
 "Far under" means below `sellFloor` (60%) of the normal price. "A few" means at most `baitShare` (20%)
 of the units listed. Gear is posted buyout-only, so nobody can win it with a low starting bid.
 
+## Track record
+
+Coin Forge logs what you do with its suggestions and how it turned out, separately for each auction house:
+
+- **Buys.** AH buys, and vendor buys, of an item listed as a deal are tagged with that deal. Other buys
+  are logged as untagged.
+- **Posts.** Every auction you post, with the price the Sell tab suggested if it came from there.
+- **Outcomes.** A sale is recorded when you open the sale mail, which gives the quantity and the money. An
+  expiry comes from the "has expired" message. A sale to a merchant is spotted on the buyback list.
+
+How each kind of suggestion is followed through:
+
+| Suggestion | Followed to |
+| --- | --- |
+| Flips, From vendor and Other AH | The item's later AH sales |
+| Vendor deals | Selling the item to a merchant |
+| Sell tab posts | How much sold, and at what share of the suggested price |
+| Crafts, disenchanting and conversions | Not followed: the item changes, so they're shown as "bought, predicted" |
+
+Some details:
+
+- Deposits come back when an auction sells, so only expired auctions' deposits count against a deal.
+- Anything still unsold after `unsoldDays` (14) counts as a loss at what you paid. It's corrected if it
+  sells later.
+- The log is never deleted automatically. Once it reaches `historyTidyEntries` (2000) entries, or
+  `historyTidyDays` (60) days, you get a hint and a Clear button on the home screen.
+- Clearing removes the detailed entries of finished rounds but keeps their totals, so the track record
+  still covers everything.
+- The detailed log is in your SavedVariables file (`WTF\Account\<account>\SavedVariables\CoinForge.lua`,
+  under `history`) if you want to dig into it.
+
 ## Commands
 
 | Command | Does |
 | --- | --- |
 | `/cforge` | Open or close the home screen |
 | `/cforge mobs` | List the 10 best mobs you've farmed |
+| `/cforge history` | Show the track record: predicted vs actual for each kind of suggestion |
+| `/cforge history clear [days]` | Clear finished rounds, or only those older than `[days]`. Totals are kept |
 | `/cforge reset` | Start a new farming session |
 | `/cforge skills` | Show the professions Coin Forge has detected on this character |
 | `/cforge minimap` | Show or hide the minimap coin |
@@ -147,10 +181,15 @@ of the units listed. Gear is posted buyout-only, so nobody can win it with a low
 | `sellFloor` | 60% | Never follow prices below this share of the normal price |
 | `baitShare` | 20% | Cheap listings that are at most this share of supply count as bait |
 | `sellDuration` | 2 | Default auction length: 1 = 2 h, 2 = 8 h, 3 = 24 h (the tab remembers your last choice) |
+| `unsoldDays` | 14 | Days before an unsold item counts as a loss in the track record |
+| `historyTidyEntries` | 2000 | Track record size at which Coin Forge suggests clearing it |
+| `historyTidyDays` | 60 | Track record age (days) at which Coin Forge suggests clearing it |
 | `showNameplates`, `showTooltips`, `showMerchant`, `showMinimap` | on | Turn individual features on or off |
 
 ## Known limitations
 
+- **Track record only sees what happens with the addon loaded.** Sales are counted when you open the sale
+  mail. Trades made before installing 0.7.0, or with the addon turned off, aren't in it.
 - **English client names.** Profession names and the neutral-town names are matched in English (enUS/enGB).
 - **Item variants.** Items with random suffixes ("of the Bear", for example) share one price per item.
 - **Collapsed profession categories** in the classic profession window hide their recipes from the recorder.

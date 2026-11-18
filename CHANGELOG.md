@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.7.0 (2026-11-18)
+
+- **Track record.** Coin Forge now follows what you do with its suggestions and shows how each kind
+  really did, on the home screen and with `/cforge history`. For example: "Flip: 12 done, predicted
+  +3g 40s, actual +2g 10s (9 sold, 3 unsold)", or "Sell tab: 20 posts, 75% sold at 96% of the
+  suggestion".
+  - Flip, From vendor and Other AH buys are followed to their AH sale, and vendor deals to the merchant.
+    Sell tab posts are followed until they sell or expire.
+  - Items unsold after 14 days count as a loss until they sell.
+- **The log is never deleted automatically.** Once it reaches 2000 entries or 60 days old, the home screen
+  shows a hint with a Clear button, and chat reminds you once per login.
+  - Use `/cforge history clear [days]` to clear it yourself.
+  - Clearing keeps the totals.
+  - The limits are settings: `historyTidyEntries`, `historyTidyDays` and `unsoldDays`.
+- Fixed: two parts of the addon listening to the same game event could silently replace each other's
+  handler. Both now run.
+
 ## 0.6.1 (2026-11-18)
 
 - Fixed: a scan could stay on "Scanning..." forever. It now gives up with a reason in the panel and in chat:

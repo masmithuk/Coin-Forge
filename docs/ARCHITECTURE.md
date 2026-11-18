@@ -47,6 +47,7 @@ tested without the game, and the parts that touch the game stay small.
 | `Appraisal` | Auction / vendor / disenchant value of an item and the best action |
 | `LootDB` | Kills, coin and drops per NPC, plus skinning per corpse; expected value per kill |
 | `GatherDB` | Gathers and yields per vein/herb name; value per gather, best nodes |
+| `History` | Per-market trade log (buy/post/sold/expired/vendorSale) replayed into rounds (FIFO by item); predicted vs actual summary, weekly totals, clearing that folds into totals, tidy advice |
 | `Opportunities` | Deal finders over current listings (see below) |
 | `SellPricing` | Suggested posting price: own listings, bait, price wars, undercut, vendor check |
 | `VendorAnalysis` | Which merchant items are worth more on the AH |
@@ -65,6 +66,7 @@ tested without the game, and the parts that touch the game stay small.
 | `Scanner` | `C_AuctionHouse.ReplicateItems`, processed in batches across frames; 15-minute cooldown |
 | `Professions` | Skill lines → `{ Enchanting = 150, ... }` |
 | `TradeSkillRecorder` | Classic trade skill API, falling back to `C_TradeSkillUI` |
+| `TradeRecorder` | `hooksecurefunc` on AH buy/post and merchant buy/buyback calls, plus purchase events, sale-mail invoices, the "expired" system message and buyback-list diffs, all written to `History` |
 | `LootRecorder` | `LOOT_OPENED` snapshot → `LOOT_SLOT_CLEARED` records only what was taken; a recent Mining/Herb Gathering/Skinning cast (`UNIT_SPELLCAST_SENT`) routes the loot to GatherDB or a mob's skinning |
 | `Nameplates` | Coin marker on `C_NamePlate` frames |
 | `Merchant` | Merchant stock; remembers vendor prices for crafting costs |
