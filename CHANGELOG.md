@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.2 (2026-11-23)
+
+- The auction house window can now be moved. Drag it, or the Coin Forge panel docked beside it, and
+  both move together.
+  - The position is remembered and restored each time you open the auction house, and both windows
+    stay on screen.
+  - `/cforge ah reset` puts the window back where Blizzard places it.
+
 ## 0.7.1 (2026-11-18)
 
 - Fixed: items in the reagent bag slot (bag 5, where profession bags like a skinning bag can go) were

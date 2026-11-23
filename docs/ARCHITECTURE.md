@@ -66,6 +66,7 @@ tested without the game, and the parts that touch the game stay small.
 | `Scanner` | `C_AuctionHouse.ReplicateItems`, processed in batches across frames; 15-minute cooldown |
 | `Professions` | Skill lines → `{ Enchanting = 150, ... }` |
 | `TradeSkillRecorder` | Classic trade skill API, falling back to `C_TradeSkillUI` |
+| `Mover` | Makes `AuctionHouseFrame` draggable (also from the docked Coin Forge panel), saves and re-applies its position on show and after `UpdateUIPanelPositions` |
 | `TradeRecorder` | `hooksecurefunc` on AH buy/post and merchant buy/buyback calls, plus purchase events, sale-mail invoices, the "expired" system message and buyback-list diffs, all written to `History` |
 | `LootRecorder` | `LOOT_OPENED` snapshot → `LOOT_SLOT_CLEARED` records only what was taken; a recent Mining/Herb Gathering/Skinning cast (`UNIT_SPELLCAST_SENT`) routes the loot to GatherDB or a mob's skinning |
 | `Nameplates` | Coin marker on `C_NamePlate` frames |

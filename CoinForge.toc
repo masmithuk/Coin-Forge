@@ -2,7 +2,7 @@
 ## Title: Coin Forge
 ## Notes: Gold-making companion: AH scanning, profitable mobs, vendor flips, disenchant / craft / arbitrage opportunities.
 ## Author: masmithuk
-## Version: 0.7.1
+## Version: 0.7.2
 ## SavedVariables: CoinForgeDB
 ## IconTexture: Interface\Icons\INV_Misc_Coin_01
 ## AddonCompartmentFunc: CoinForge_OnCompartmentClick
@@ -57,6 +57,7 @@ src/WoW/App.lua
 
 # UI
 src/UI/Widgets.lua
+src/UI/Mover.lua
 src/UI/SellView.lua
 src/UI/AuctionPanel.lua
 src/UI/MerchantOverlay.lua

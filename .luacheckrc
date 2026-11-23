@@ -21,7 +21,7 @@ read_globals = {
   "TooltipDataProcessor", "Enum", "GameTooltip", "CreateFrame", "UIParent", "hooksecurefunc",
   "GetItemInfo", "GetItemInfoInstant", "GetRealmName", "UnitFactionGroup", "GetSubZoneText", "GetZoneText",
   "UnitGUID", "UnitName", "UnitIsPlayer", "UnitIsDead", "UnitCanAttack", "GetTime", "time", "date",
-  "GetNumLootItems", "GetLootSlotLink", "GetLootSlotType", "GetLootSourceInfo", "GetLootSlotInfo", "C_Spell", "GetSpellInfo", "BuyMerchantItem", "BuybackItem", "GetBuybackItemInfo",
+  "GetNumLootItems", "GetLootSlotLink", "GetLootSlotType", "GetLootSourceInfo", "GetLootSlotInfo", "C_Spell", "GetSpellInfo", "BuyMerchantItem", "BuybackItem", "InCombatLockdown", "GetBuybackItemInfo",
   "GetBuybackItemLink", "GetInboxHeaderInfo", "GetInboxInvoiceInfo", "GetInboxNumItems", "GetNumBuybackItems",
   "GetNumSkillLines", "GetSkillLineInfo", "GetProfessions", "GetProfessionInfo",
   "GetNumTradeSkills", "GetTradeSkillInfo", "GetTradeSkillItemLink", "GetTradeSkillNumMade",

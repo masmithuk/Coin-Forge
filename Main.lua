@@ -5,6 +5,7 @@ local addonName, ns = ...
 local events = CreateFrame("Frame")
 local handlers = {}
 local app, home, minimap, panel, merchant, nameplates, lootRecorder
+local placeAuctionHouse
 
 -- Registers a handler for a game event (several handlers may share one). Events differ between game versions,
 -- and the retail-based Forever client raises an error for unknown names, which
@@ -48,6 +49,7 @@ local function printHelp()
   p("  /cforge config - list settings, /cforge config <name> <value> to change one")
   p("  /cforge history - how the suggestions you acted on turned out")
   p("  /cforge bags - what the Sell tab finds in each bag")
+  p("  /cforge ah reset - put the auction house window back where Blizzard places it")
   p("  /cforge history clear [days] - clear finished rounds (older than [days]); totals are kept")
 end
 
@@ -109,6 +111,12 @@ local function setupCommands()
     config = printConfig,
     mobs = printMobs,
     history = history,
+    ah = function(args)
+      if args[1] ~= "reset" then return ns.Api.print("Drag the auction house window or the Coin Forge panel"
+        .. " to move them. /cforge ah reset puts the window back where Blizzard places it.") end
+      ns.Mover.reset(app.db.ui.ahFrame or {})
+      ns.Api.print("Auction house position reset: it opens in Blizzard's place next time.")
+    end,
     bags = function()
       for _, d in ipairs(ns.Bags.diagnose()) do
         ns.Api.print(("bag %d: %d slots, %d items, %d sellable on the AH"):format(d.bag, d.slots, d.items, d.sellable))
@@ -174,6 +182,8 @@ local function start()
     dealFor = function(itemID, kinds) return app:dealFor(itemID, kinds) end,
   })
   app.trades:install()
+  -- Blizzard re-lays out its windows when others open: keep the AH where it was moved
+  if _G.UpdateUIPanelPositions then hooksecurefunc("UpdateUIPanelPositions", function() placeAuctionHouse() end) end
 
   ns.Tooltip.install({
     settings = app.settings,
@@ -235,12 +245,25 @@ on("ADDON_LOADED", function(name)
   start()
 end)
 
+-- The auction house window (and the Coin Forge panel docked to it) can be dragged;
+-- keep it where the player left it.
+placeAuctionHouse = function()
+  local ah = _G.AuctionHouseFrame
+  if not (ah and panel.frame) then return end
+  app.db.ui.ahFrame = app.db.ui.ahFrame or {}
+  ns.Mover.attach(ah, app.db.ui.ahFrame, { panel.frame })
+  if ah:IsShown() then ns.Mover.apply(ah, app.db.ui.ahFrame, panel.frame) end
+end
+
 on("AUCTION_HOUSE_SHOW", function()
   -- the deals of the auction house you're at (faction, neutral, or another realm),
   -- recalculated with this character's current skills and recipes
   app:ensureMarket()
   if app.scanner.lastResult then app:findOpportunities() end
   panel:Show(AuctionHouseFrame)
+  placeAuctionHouse()
+  -- Blizzard may place its window after this event: put it back next frame too
+  C_Timer.After(0, placeAuctionHouse)
 end)
 on("AUCTION_HOUSE_CLOSED", function()
   app.scanner:onEvent("AUCTION_HOUSE_CLOSED")

@@ -159,6 +159,7 @@ Some details:
 | --- | --- |
 | `/cforge` | Open or close the home screen |
 | `/cforge mobs` | List the 10 best mobs you've farmed |
+| `/cforge ah reset` | Put the auction house window back where Blizzard places it (drag it, or the Coin Forge panel, to move both) |
 | `/cforge bags` | Show what the Sell tab finds in each bag |
 | `/cforge history` | Show the track record: predicted vs actual for each kind of suggestion |
 | `/cforge history clear [days]` | Clear finished rounds, or only those older than `[days]`. Totals are kept |

@@ -117,6 +117,26 @@ describe("UI smoke test", function()
     assert.matches("Usage", printed[#printed])
   end)
 
+  it("lets you drag the auction house and puts it back there next time", function()
+    local ah = _G.AuctionHouseFrame
+    ah.GetPoint = function() return "TOPLEFT", _G.UIParent, "BOTTOMLEFT", 80, 650 end
+    ah:Show()
+    fire("AUCTION_HOUSE_SHOW")
+    _G.CoinForgeAuctionPanel:Fire("OnDragStart")
+    _G.CoinForgeAuctionPanel:Fire("OnDragStop")
+    fire("AUCTION_HOUSE_CLOSED")
+    ah.calls = {}
+    fire("AUCTION_HOUSE_SHOW")
+    local placed
+    for _, c in ipairs(ah.calls) do if c[1] == "SetPoint" then placed = { c[2], c[4], c[5], c[6] } end end
+    assert.same({ "TOPLEFT", "BOTTOMLEFT", 80, 650 }, placed)
+
+    _G.SlashCmdList.COINFORGE("ah reset")
+    ah.calls = {}
+    fire("AUCTION_HOUSE_SHOW")
+    for _, c in ipairs(ah.calls) do assert.are_not.equal("SetPoint", c[1]) end
+  end)
+
   it("opens the home screen from the slash command and minimap", function()
     _G.SlashCmdList.COINFORGE("")
     assert.is_true(_G.CoinForgeHome.shown)
