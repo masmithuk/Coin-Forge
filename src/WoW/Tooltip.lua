@@ -133,6 +133,22 @@ local function addLines(tooltip, lines)
 end
 
 --- Hooks the game tooltips. `deps` holds item and unit dependencies plus settings.
+-- A tooltip hook that errors would error again on every refresh (several times
+-- a second while you hover a unit). Instead the first error is reported once
+-- in chat and that hook is paused for the rest of the session.
+local paused = {}
+local function safely(name, fn)
+  return function(...)
+    if paused[name] then return end
+    local ok, err = pcall(fn, ...)
+    if not ok then
+      paused[name] = true
+      ns.Api.print(("%s tooltip lines paused until /reload after an error: %s"):format(name, tostring(err)))
+    end
+  end
+end
+Tooltip.safely = safely
+
 function Tooltip.install(deps)
   local function onItem(tooltip, itemID)
     if deps.settings.showTooltips and itemID then addLines(tooltip, Tooltip.itemLines(itemID, 1, deps.item)) end
@@ -145,36 +161,37 @@ function Tooltip.install(deps)
   -- World objects (veins, herbs) have no item or unit: match them by the
   -- tooltip's title against the nodes you've gathered.
   if deps.node and GameTooltip and GameTooltip.HookScript then
-    GameTooltip:HookScript("OnShow", function(tooltip)
+    GameTooltip:HookScript("OnShow", safely("Node", function(tooltip)
       if not deps.settings.showTooltips or tooltip.coinForgeNode then return end
-      if tooltip:GetUnit() or tooltip:GetItem() then return end
+      -- type() is safe on hidden values; testing them directly isn't
+      if type(tooltip:GetUnit()) ~= "nil" or type(tooltip:GetItem()) ~= "nil" then return end
       local title = _G[(tooltip:GetName() or "GameTooltip") .. "TextLeft1"]
       local name = title and title:GetText()
-      if not name then return end
+      if not name or ns.isSecret(name) then return end
       local lines = Tooltip.nodeLines(name, deps.node)
       if #lines == 0 then return end
       tooltip.coinForgeNode = true
       addLines(tooltip, lines)
       tooltip:Show() -- resize to fit
-    end)
+    end))
     GameTooltip:HookScript("OnHide", function(tooltip) tooltip.coinForgeNode = nil end)
   end
 
   if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall and Enum and Enum.TooltipDataType then
-    TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, function(tooltip, data)
+    TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, safely("Item", function(tooltip, data)
       onItem(tooltip, data and data.id)
-    end)
-    TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, function(tooltip, data)
+    end))
+    TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, safely("Mob", function(tooltip, data)
       onUnit(tooltip, data and data.guid)
-    end)
+    end))
   elseif GameTooltip and GameTooltip.HookScript then
-    GameTooltip:HookScript("OnTooltipSetItem", function(tooltip)
+    GameTooltip:HookScript("OnTooltipSetItem", safely("Item", function(tooltip)
       local _, link = tooltip:GetItem()
       onItem(tooltip, ns.Api.itemIDFromLink(link))
-    end)
-    GameTooltip:HookScript("OnTooltipSetUnit", function(tooltip)
+    end))
+    GameTooltip:HookScript("OnTooltipSetUnit", safely("Mob", function(tooltip)
       local _, unit = tooltip:GetUnit()
       onUnit(tooltip, unit and UnitGUID(unit))
-    end)
+    end))
   end
 end

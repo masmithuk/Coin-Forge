@@ -908,6 +908,60 @@ describe("WoW adapters", function()
       _G.GameTooltipTextLeft1 = nil
     end)
 
+    describe("in instances, where the game hides some unit data", function()
+      local SECRET = "Creature-0-1-0-1-622-SECRET"
+      local printed, calls
+      local function unitDeps(expected)
+        return {
+          settings = { showTooltips = true },
+          item = {},
+          unit = { expected = expected, topDrops = function() return {} end, nameOf = function() end },
+          node = { expected = function(name) calls = calls + 1; if name == "Copper Vein" then return 1, 1 end end,
+            topDrops = function() return {} end, nameOf = function() end },
+        }
+      end
+      before_each(function()
+        printed, calls = {}, 0
+        _G.issecretvalue = function(v) return v == SECRET end
+        _G.UnitGUID = function() return SECRET end
+        _G.GameTooltip.GetUnit = function() return "Goblin Engineer", "mouseover" end
+        _G.DEFAULT_CHAT_FRAME = { AddMessage = function(_, msg) printed[#printed + 1] = msg end }
+      end)
+      after_each(function() _G.issecretvalue = nil end)
+
+      it("skips mobs whose GUID is secret", function()
+        assert.is_nil(ns.GUID.npcID(SECRET))
+        assert.is_false(ns.GUID.isObject(SECRET))
+        local asked = false
+        ns.Tooltip.install(unitDeps(function() asked = true end))
+        _G.GameTooltip:Fire("OnTooltipSetUnit")
+        assert.is_false(asked)
+        assert.same({}, printed)
+      end)
+
+      it("skips tooltips whose title is secret", function()
+        _G.GameTooltip.GetUnit = function() return nil end
+        _G.GameTooltipTextLeft1 = require("helpers.wow_mock").frame(nil)
+        _G.GameTooltipTextLeft1.text = SECRET
+        ns.Tooltip.install(unitDeps(function() end))
+        _G.GameTooltip:Fire("OnShow")
+        assert.equal(0, calls)
+        _G.GameTooltipTextLeft1 = nil
+      end)
+
+      it("reports a failing tooltip hook once and pauses it instead of erroring every refresh", function()
+        _G.UnitGUID = function() return "Creature-0-1-0-1-622-AAA" end
+        local tries = 0
+        ns.Tooltip.install(unitDeps(function() tries = tries + 1; error("boom") end))
+        _G.GameTooltip:Fire("OnTooltipSetUnit")
+        _G.GameTooltip:Fire("OnTooltipSetUnit")
+        _G.GameTooltip:Fire("OnTooltipSetUnit")
+        assert.equal(1, tries)
+        assert.equal(1, #printed)
+        assert.matches("boom", printed[1])
+      end)
+    end)
+
     it("returns no unit lines for unknown mobs", function()
       assert.same({}, ns.Tooltip.unitLines(1, { expected = function() return nil end }))
     end)

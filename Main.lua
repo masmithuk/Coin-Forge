@@ -34,7 +34,8 @@ end
 
 local function learnName(unit)
   local npcID = ns.GUID.npcID(UnitGUID(unit))
-  if npcID then app.loot:setName(npcID, UnitName(unit)) end
+  local name = npcID and UnitName(unit)
+  if name and not ns.isSecret(name) then app.loot:setName(npcID, name) end
 end
 
 local function printHelp()

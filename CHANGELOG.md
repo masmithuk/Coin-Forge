@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.3 (2026-11-24)
+
+- Fixed: hovering some mobs in dungeons (e.g. the goblins in the Deadmines) could cause an endless loop of
+  Lua errors.
+  - Inside instances, the client can hide unit names and GUIDs from addons, and Coin Forge tried to read
+    them. It now skips hidden values: no Coin Forge lines for those mobs, and no error.
+- If a tooltip hook ever fails, Coin Forge now reports the error once in chat and pauses only those
+  tooltip lines until `/reload`, instead of erroring on every tooltip refresh.
+
 ## 0.7.2 (2026-11-23)
 
 - The auction house window can now be moved. Drag it, or the Coin Forge panel docked beside it, and

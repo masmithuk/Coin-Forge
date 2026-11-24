@@ -48,7 +48,7 @@ function LootRecorder:recentGather()
 end
 
 function LootRecorder:onCast(unit, target, spellID)
-  if unit ~= "player" then return end
+  if unit ~= "player" or ns.isSecret(target) or ns.isSecret(spellID) then return end
   local kind = LootRecorder.GATHER_SPELLS[spellName(spellID) or ""]
   if kind then
     self.lastGather = { kind = kind, target = target, time = GetTime() }
